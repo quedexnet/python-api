@@ -1,0 +1,24 @@
+{
+  "name": "quedex-python-api",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/quedexnet/python-api.git"
+  },
+  "keywords": [
+    "quedex",
+    "python",
+    "api"
+  ],
+  "author": "Wiktor Gromniak <wgromniak@quedex.net>",
+  "license": "Apache-2.0",
+  "bugs": {
+    "url": "https://github.com/quedexnet/python-api/issues"
+  },
+  "homepage": "https://github.com/quedexnet/python-api#readme"
+}
