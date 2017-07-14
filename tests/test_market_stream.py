@@ -96,6 +96,11 @@ class TestMarketStream(TestCase):
 
     self.assertEqual(self.listener.error.message, 'No JSON object could be decoded')
 
+  def test_receives_error_from_outside(self):
+    self.market_stream.on_error(Exception('bomba'))
+
+    self.assertEqual(self.listener.error.message, 'bomba')
+
 
 class TestListener(MarketStreamListener):
   def __init__(self):
