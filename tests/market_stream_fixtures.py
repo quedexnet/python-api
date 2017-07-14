@@ -41,3 +41,7 @@ trade_str = '{"type":"data","data":"-----BEGIN PGP SIGNED MESSAGE-----\\nHash: S
 session_state_str = '{"type":"data","data":"-----BEGIN PGP SIGNED MESSAGE-----\\nHash: SHA256\\n\\n{\\n  \\"state\\" : \\"continuous\\",\\n  \\"type\\" : \\"session_state\\"\\n}\\n-----BEGIN PGP SIGNATURE-----\\nVersion: QPG\\n\\niQE5BAEBCAAjBQJZaHr4HBxRdWVkZXggPGNvbnRhY3RAcXVlZGV4Lm5ldD4ACgkQ\\nzsLQUmv6vk+gXwf9HnIw7LyiE1vBJ7LW/9b4Jm/2OswieQE6aG5wVB+uMF/DP/5G\\nbzOC2Tp/PeqelvMqbZNUm51+oUYO/Pv3eypxlJMOFzUqLMAOvGyK7J0vtyhZC5ke\\nBQL+3JqxwQbe93DD9cEqdCstmAMXPwQl7CR7SWGHiZW/HttLVN4XqRCb5LWv8+96\\nia044SXCdeHQRbXwQl0Srf5A7QfvaEGz/kIu7G92UYVlGoB6Qf6qj82e6tJHZlnq\\nbgcMAEs1g7P41R2pNGJxYd+3wT/qHG7VNR2xO05KmilL3y7oS/uk0hwmKsfsVoCn\\nM7YGPiesIzsSuQIyXL+hLf0gT2lAmkmuAkjmEA==\\n=nWGk\\n-----END PGP SIGNATURE-----\\n","id":144}'
 
 corrupt_data_str = 'this is not JSON'
+
+error_data_str = '{"type":"error","error_code":"ERROR"}'
+
+error_maintenance_data_str = '{"type":"error","error_code":"maintenance"}'

@@ -101,6 +101,16 @@ class TestMarketStream(TestCase):
 
     self.assertEqual(self.listener.error.message, 'bomba')
 
+  def test_maintenance_error_code_is_ignored(self):
+    self.market_stream.on_message(market_stream_fixtures.error_maintenance_data_str)
+
+    self.assertEqual(self.listener.error, None)
+
+  def test_receives_error_on_non_maintenance_error_code(self):
+    self.market_stream.on_message(market_stream_fixtures.error_data_str)
+
+    self.assertEqual(self.listener.error.message, 'WebSocket error: ERROR')
+
 
 class TestListener(MarketStreamListener):
   def __init__(self):

@@ -8,8 +8,11 @@ class MarketStreamClientProtocol(WebSocketClientProtocol):
   def onMessage(self, payload, isbinary):
     self.factory.market_stream.on_message(payload)
 
-  def onClose(self, wasClean, code, reason):
-    self.factory.market_stream.on_error(Exception('WebSocket closed - %s : %s' % (code, reason)))
+  def onClose(self, wasclean, code, reason):
+    if not wasclean:
+      self.factory.market_stream.on_error(Exception('WebSocket closed with error - %s : %s' % (code, reason)))
+    else:
+      self.factory.market_stream.on_disconnect('WebSocket closed cleanly - %s : %s' % (code, reason))
 
 
 class MarketStreamClientFactory(WebSocketClientFactory):
