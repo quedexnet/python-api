@@ -103,9 +103,19 @@ class MarketStreamListener(object):
 
   def on_error(self, error):
     """
-    Called when an error with market stream occurs (data parsing, signature verification, webosocket error).
+    Called when an error with market stream occurs (data parsing, signature verification, webosocket error). This means
+    a serious problem, which should be investigated (cf. on_disconnect).
 
     :type error: subtype of Exception
+    """
+    pass
+
+  def on_disconnect(self, message):
+    """
+    Called when market stream disconnects cleanly (exchange going down for maintenance, network problem, etc.). The
+    client should reconnect in such a case.
+
+    :param message: string message with reason of the disconnect
     """
     pass
 
@@ -135,7 +145,10 @@ class MarketStream(object):
       message_wrapper = json.loads(message_wrapper_str)
 
       if message_wrapper['type'] == 'error':
-        self.market_stream_listener.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
+        # error_code == maintenance accompanies exchange engine going down for maintenance which causes a graceful
+        # disconnect of the WebSocket, handled by MarketStreamListener.on_disconnect
+        if message_wrapper['error_code'] != 'maintenance':
+          self.market_stream_listener.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
         return
 
       clearsigned_message_str = message_wrapper['data']
