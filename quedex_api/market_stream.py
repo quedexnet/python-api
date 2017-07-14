@@ -11,50 +11,6 @@ type_to_listener_method = {
 }
 
 
-class MarketStream(object):
-  def __init__(self, exchange, market_stream_listener):
-    self.exchange = exchange
-    self.market_stream_listener = market_stream_listener
-    self.quedex_key = pgpy.PGPKey()
-    self.quedex_key.parse(exchange.public_key)
-
-  def on_message(self, message_wrapper_str):
-    try:
-      if message_wrapper_str == 'keepalive':
-        return
-
-      message_wrapper = json.loads(message_wrapper_str)
-
-      if message_wrapper['type'] == 'error':
-        self.market_stream_listener.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
-        return
-
-      clearsigned_message_str = message_wrapper['data']
-
-      clearsigned_message = pgpy.PGPMessage().from_blob(clearsigned_message_str)
-      if not self.quedex_key.verify(clearsigned_message):
-        self.market_stream_listener.on_error(
-          Exception('Signature verification failed on message: %s' % clearsigned_message_str)
-        )
-
-      self._parse_message(clearsigned_message.message)
-    except Exception as e:
-      self.market_stream_listener.on_error(e)
-
-  def _parse_message(self, message_str):
-    message = json.loads(message_str)
-    type = message['type']
-    if type in type_to_listener_method:
-      listener_name = type_to_listener_method[message['type']]
-      getattr(self.market_stream_listener, listener_name)(message)
-
-    self.market_stream_listener.on_message(message)
-
-  @property
-  def market_stream_url(self):
-    return self.exchange.market_stream_url
-
-
 class MarketStreamListener(object):
   def on_message(self, message):
     pass
@@ -141,3 +97,47 @@ class MarketStreamListener(object):
 
   def on_error(self, error):
     pass
+
+
+class MarketStream(object):
+  def __init__(self, exchange, market_stream_listener):
+    self.exchange = exchange
+    self.market_stream_listener = market_stream_listener
+    self.quedex_key = pgpy.PGPKey()
+    self.quedex_key.parse(exchange.public_key)
+
+  def on_message(self, message_wrapper_str):
+    try:
+      if message_wrapper_str == 'keepalive':
+        return
+
+      message_wrapper = json.loads(message_wrapper_str)
+
+      if message_wrapper['type'] == 'error':
+        self.market_stream_listener.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
+        return
+
+      clearsigned_message_str = message_wrapper['data']
+
+      clearsigned_message = pgpy.PGPMessage().from_blob(clearsigned_message_str)
+      if not self.quedex_key.verify(clearsigned_message):
+        self.market_stream_listener.on_error(
+          Exception('Signature verification failed on message: %s' % clearsigned_message_str)
+        )
+
+      self._parse_message(clearsigned_message.message)
+    except Exception as e:
+      self.market_stream_listener.on_error(e)
+
+  def _parse_message(self, message_str):
+    message = json.loads(message_str)
+    type = message['type']
+    if type in type_to_listener_method:
+      listener_name = type_to_listener_method[message['type']]
+      getattr(self.market_stream_listener, listener_name)(message)
+
+    self.market_stream_listener.on_message(message)
+
+  @property
+  def market_stream_url(self):
+    return self.exchange.market_stream_url
