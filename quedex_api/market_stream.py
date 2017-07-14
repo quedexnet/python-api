@@ -138,6 +138,9 @@ class MarketStream(object):
 
     self.market_stream_listener.on_message(message)
 
+  def on_error(self, error):
+    self.market_stream_listener.on_error(error)
+
   @property
   def market_stream_url(self):
     return self.exchange.market_stream_url
