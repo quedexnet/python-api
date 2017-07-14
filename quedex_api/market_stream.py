@@ -13,6 +13,9 @@ type_to_listener_method = {
 
 class MarketStreamListener(object):
   def on_message(self, message):
+    """
+    Called on every received message.
+    """
     pass
 
   def on_instrument_data(self, instrument_data):
@@ -68,7 +71,8 @@ class MarketStreamListener(object):
         "ask": "<decimal price as string>",
         "ask_quantity": <integer>,
         "volume": <integer>,
-        "open_interest": <integer>,
+        "open_interest": <integer>
+      }
     """
     pass
 
@@ -83,6 +87,7 @@ class MarketStreamListener(object):
         "price": "<decimal as string>",
         "quantity": <integer>,
         "liquidity_provider": "buyer"/"seller"/"auction"
+      }
     """
     pass
 
@@ -92,14 +97,30 @@ class MarketStreamListener(object):
       {
         "type": "session_state",
         "state: "opening_auction"/"continuous"/"auction"/"closing_auction"/"no_trading"
+      }
     """
     pass
 
   def on_error(self, error):
+    """
+    Called when an error with market stream occurs (data parsing, signature verification, webosocket error).
+
+    :type error: subtype of Exception
+    """
     pass
 
 
 class MarketStream(object):
+  """
+  Use this class to connect to the market stream at Quedex, i.e. to the stream of publicly available, realtime trading
+  data with order books, trades, etc. The data comes in the form of PGP-clearsigned JSON messages - all parsing and
+  verification is handled internally and the client receives Python objects (dicts with the data).
+
+  To use this class, implement your own MarketStreamListener (by inheriting from the base class) and pass an instance
+  to the constructor. Methods of listener will be called when respective objects arrive on the market stream. For the
+  format of the data see comments on MarketStreamListener.
+  """
+
   def __init__(self, exchange, market_stream_listener):
     self.exchange = exchange
     self.market_stream_listener = market_stream_listener
