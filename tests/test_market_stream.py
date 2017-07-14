@@ -8,7 +8,7 @@ class TestMarketStream(TestCase):
 
   def setUp(self):
     exchange = Exchange(market_stream_fixtures.public_key_str, 'apiurl')
-    self.listener = MockListener()
+    self.listener = TestListener()
     self.market_stream = MarketStream(exchange, self.listener)
 
   def test_receiving_order_book(self):
@@ -97,7 +97,7 @@ class TestMarketStream(TestCase):
     self.assertEqual(self.listener.error.message, 'No JSON object could be decoded')
 
 
-class MockListener(MarketStreamListener):
+class TestListener(MarketStreamListener):
   def __init__(self):
     self.message = None
     self.instrument_data = None
