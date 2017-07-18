@@ -34,15 +34,15 @@ from time import time
 
 Next, we will create basic entities required to connect to Quedex - `Exchange` and `Trader`. These
 are provided with the public PGP key of Quedex (TODO: how get it) and your encrypted PGP private key
-(TODO: how to get it), which are read from files and hardcoded API url, account id and private key 
-password (we highly recommend not storing the latter two in the code in a production set up!).
+(TODO: how to get it), which are read from files and hardcoded API url (this should be substituted
+with `wss://api.quedex.net` in real code), account id and private key password (we highly recommend 
+not storing the latter two in the code in a production set up!).
 
 ```python
-quedex_public_key = open("quedex-public-key.asc", "r").read()
-exchange = Exchange(quedex_public_key, 'wss://api.quedex.net')
+quedex_public_key = open("keys/quedex-public-key.asc", "r").read()
+exchange = Exchange(quedex_public_key, 'ws://localhost:8080')
 
-trader_private_key = open("trader-private-key.asc", "r").read()
-account_id = open("account-id", "r").read()
+trader_private_key = open("keys/trader-private-key.asc", "r").read()
 trader = Trader(trader_private_key, '83745263748')
 trader.decrypt_private_key('s3cret')
 ```
@@ -72,6 +72,12 @@ Twisted's threading model.
 ```python
 selected_futures_id = None
 sell_threshold = 0.001
+order_id = 0
+
+def get_order_id():
+  global order_id
+  order_id += 1
+  return order_id
 
 class SimpleMarketListener(MarketStreamListener):
   def on_instrument_data(self, instrument_data):
@@ -86,7 +92,7 @@ class SimpleMarketListener(MarketStreamListener):
     if bids and (not bids[0] or bids[0][0] > sell_threshold):
       user_stream.place_order({
         'instrument_id': selected_futures_id, 
-        'client_order_id':  int(time() * 1000000),
+        'client_order_id':  get_order_id(),
         'side': 'sell',
         'quantity': 1000,
         'limit_price': bids[0][0],
@@ -126,7 +132,7 @@ class SimpleUserListener(UserStreamListener):
         orders.append({
           'type': 'place_order',
           'instrument_id': open_position['instrument_ud'], 
-          'client_order_id':  int(time() * 1000000),
+          'client_order_id':  get_order_id(),
           'side': order_side,
           'quantity': open_position['quantity'],
           'limit_price': '0.00000001' if order_side == 'sell' else '100000',
