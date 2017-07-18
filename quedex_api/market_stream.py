@@ -126,16 +126,22 @@ class MarketStream(object):
   data with order books, trades, etc. The data comes in the form of PGP-clearsigned JSON messages - all parsing and
   verification is handled internally and the client receives Python objects (dicts with the data).
 
-  To use this class, implement your own MarketStreamListener (by inheriting from the base class) and pass an instance
-  to the constructor. Methods of listener will be called when respective objects arrive on the market stream. For the
+  To use this class, implement your own MarketStreamListener (by inheriting from the base class) and add an instance via
+  add_listener method. Methods of listener will be called when respective objects arrive on the market stream. For the
   format of the data see comments on MarketStreamListener.
   """
 
-  def __init__(self, exchange, market_stream_listener):
-    self.exchange = exchange
-    self.market_stream_listener = market_stream_listener
-    self.quedex_key = pgpy.PGPKey()
-    self.quedex_key.parse(exchange.public_key)
+  def __init__(self, exchange):
+    self._exchange = exchange
+    self._quedex_key = pgpy.PGPKey()
+    self._quedex_key.parse(exchange.public_key)
+    self._listeners = []
+
+  def add_listener(self, market_stream_listener):
+    self._listeners.append(market_stream_listener)
+
+  def remove_listener(self, market_stream_listener):
+    self._listeners.remove(market_stream_listener)
 
   def on_message(self, message_wrapper_str):
     try:
@@ -148,33 +154,39 @@ class MarketStream(object):
         # error_code == maintenance accompanies exchange engine going down for maintenance which causes a graceful
         # disconnect of the WebSocket, handled by MarketStreamListener.on_disconnect
         if message_wrapper['error_code'] != 'maintenance':
-          self.market_stream_listener.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
+          for listener in self._listeners:
+            listener.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
         return
 
       clearsigned_message_str = message_wrapper['data']
 
       clearsigned_message = pgpy.PGPMessage().from_blob(clearsigned_message_str)
-      if not self.quedex_key.verify(clearsigned_message):
-        self.market_stream_listener.on_error(
+      if not self._quedex_key.verify(clearsigned_message):
+        for listener in self._listeners:
+          listener.on_error(
           Exception('Signature verification failed on message: %s' % clearsigned_message_str)
         )
 
       self._parse_message(clearsigned_message.message)
     except Exception as e:
-      self.market_stream_listener.on_error(e)
+      for listener in self._listeners:
+        listener.on_error(e)
 
   def _parse_message(self, message_str):
     message = json.loads(message_str)
     type = message['type']
     if type in type_to_listener_method:
       listener_name = type_to_listener_method[message['type']]
-      getattr(self.market_stream_listener, listener_name)(message)
+      for listener in self._listeners:
+        getattr(listener, listener_name)(message)
 
-    self.market_stream_listener.on_message(message)
+    for listener in self._listeners:
+      listener.on_message(message)
 
   def on_error(self, error):
-    self.market_stream_listener.on_error(error)
+    for listener in self._listeners:
+      listener.on_error(error)
 
   @property
   def market_stream_url(self):
-    return self.exchange.market_stream_url
+    return self._exchange.market_stream_url

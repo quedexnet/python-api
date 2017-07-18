@@ -9,7 +9,8 @@ class TestMarketStream(TestCase):
   def setUp(self):
     exchange = Exchange(market_stream_fixtures.public_key_str, 'apiurl')
     self.listener = TestListener()
-    self.market_stream = MarketStream(exchange, self.listener)
+    self.market_stream = MarketStream(exchange)
+    self.market_stream.add_listener(self.listener)
 
   def test_receiving_order_book(self):
     self.market_stream.on_message(market_stream_fixtures.order_book_str)
@@ -110,6 +111,22 @@ class TestMarketStream(TestCase):
     self.market_stream.on_message(market_stream_fixtures.error_data_str)
 
     self.assertEqual(self.listener.error.message, 'WebSocket error: ERROR')
+
+  def test_does_not_call_removed_listener(self):
+    self.market_stream.remove_listener(self.listener)
+
+    self.market_stream.on_message(market_stream_fixtures.order_book_str)
+
+    self.assertEqual(self.listener.order_book, None)
+
+  def test_calls_multiple_added_listeners(self):
+    listener2 = TestListener()
+    self.market_stream.add_listener(listener2)
+
+    self.market_stream.on_message(market_stream_fixtures.order_book_str)
+
+    self.assertNotEquals(self.listener.order_book, None)
+    self.assertNotEquals(listener2.order_book, None)
 
 
 class TestListener(MarketStreamListener):
