@@ -145,6 +145,11 @@ class TestMarketStream(TestCase):
 
     self.assertNotEquals(listener.order_book, None)
 
+  def test_disconnect(self):
+    self.market_stream.on_disconnect('maintenance')
+
+    self.assertEqual(self.listener.disconnect_message, 'maintenance')
+
 class TestListener(MarketStreamListener):
   def __init__(self):
     self.message = None
@@ -154,6 +159,7 @@ class TestListener(MarketStreamListener):
     self.trade = None
     self.session_state = None
     self.error = None
+    self.disconnect_message = None
 
   def on_message(self, message):
     self.message = message
@@ -175,3 +181,6 @@ class TestListener(MarketStreamListener):
 
   def on_error(self, error):
     self.error = error
+
+  def on_disconnect(self, message):
+    self.disconnect_message = message

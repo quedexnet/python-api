@@ -104,7 +104,7 @@ class MarketStreamListener(object):
 
   def on_disconnect(self, message):
     """
-    Called when market stream disconnects cleanly (exchange going down for maintenance, network problem, etc.). The
+    Called when market stream disconnects cleanly (exchange going down for maintenance, etc.). The
     client should reconnect in such a case.
 
     :param message: string message with reason of the disconnect
@@ -174,6 +174,11 @@ class MarketStream(object):
     for listener in self._listeners:
       if hasattr(listener, 'on_error'):
         listener.on_error(error)
+
+  def on_disconnect(self, message):
+    for listener in self._listeners:
+      if hasattr(listener, 'on_disconnect'):
+        listener.on_disconnect(message)
 
   @property
   def market_stream_url(self):
