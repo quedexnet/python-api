@@ -2,14 +2,6 @@ import json
 
 import pgpy
 
-type_to_listener_method = {
-  'order_book': 'on_order_book',
-  'trade': 'on_trade',
-  'quotes': 'on_quotes',
-  'session_state': 'on_session_state',
-  'instrument_data': 'on_instrument_data',
-}
-
 
 class MarketStreamListener(object):
   def on_message(self, message):
@@ -154,38 +146,34 @@ class MarketStream(object):
         # error_code == maintenance accompanies exchange engine going down for maintenance which causes a graceful
         # disconnect of the WebSocket, handled by MarketStreamListener.on_disconnect
         if message_wrapper['error_code'] != 'maintenance':
-          for listener in self._listeners:
-            listener.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
+          self.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
         return
 
       clearsigned_message_str = message_wrapper['data']
 
       clearsigned_message = pgpy.PGPMessage().from_blob(clearsigned_message_str)
       if not self._quedex_key.verify(clearsigned_message):
-        for listener in self._listeners:
-          listener.on_error(
-          Exception('Signature verification failed on message: %s' % clearsigned_message_str)
-        )
+        self.on_error(Exception('Signature verification failed on message: %s' % clearsigned_message_str))
 
       self._parse_message(clearsigned_message.message)
     except Exception as e:
-      for listener in self._listeners:
-        listener.on_error(e)
+      self.on_error(e)
 
   def _parse_message(self, message_str):
     message = json.loads(message_str)
-    type = message['type']
-    if type in type_to_listener_method:
-      listener_name = type_to_listener_method[message['type']]
-      for listener in self._listeners:
+    listener_name = 'on_' + message['type']
+    for listener in self._listeners:
+      if hasattr(listener, listener_name):
         getattr(listener, listener_name)(message)
 
     for listener in self._listeners:
-      listener.on_message(message)
+      if hasattr(listener, 'on_message'):
+        listener.on_message(message)
 
   def on_error(self, error):
     for listener in self._listeners:
-      listener.on_error(error)
+      if hasattr(listener, 'on_error'):
+        listener.on_error(error)
 
   @property
   def market_stream_url(self):
