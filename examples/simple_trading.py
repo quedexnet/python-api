@@ -7,13 +7,21 @@ from quedex_api import (
   UserStream,
   UserStreamListener,
   UserStreamClientFactory,
-  )
+)
 
-from twisted.internet import reactor
+from twisted.internet import reactor, ssl
+from autobahn.twisted.websocket import connectWS
 
 from time import time
-//:: user_stream_listener :://
+quedex_public_key = open("quedex-public-key.asc", "r").read()
+exchange = Exchange(quedex_public_key, 'wss://api.quedex.net')
 
+trader_private_key = open("trader-private-key.asc", "r").read()
+account_id = open("account-id", "r").read()
+trader = Trader(trader_private_key, '83745263748')
+trader.decrypt_private_key('s3cret')
+user_stream = UserStream(exchange, trader)
+market_stream = MarketStream(exchange)
 selected_futures_id = None
 sell_threshold = 0.001
 
@@ -27,7 +35,7 @@ class SimpleMarketListener(MarketStreamListener):
     if order_book['instrument_id'] != selected_futures_id:
       return 
     bids = order_book['bids']
-    if bids and (not bids[0] or float(bids[0][0]) > sell_threshold):
+    if bids and (not bids[0] or bids[0][0] > sell_threshold):
       user_stream.place_order({
         'instrument_id': selected_futures_id, 
         'client_order_id':  int(time() * 1000000),
@@ -36,8 +44,7 @@ class SimpleMarketListener(MarketStreamListener):
         'limit_price': bids[0][0],
         'order_type': 'limit',
       })
-//== user_stream_listener ==//
-
+market_stream.add_listener(SimpleMarketListener())
 open_positions = {}
 balance_threshold = 3.1415927
 
@@ -60,15 +67,9 @@ class SimpleUserListener(UserStreamListener):
           'limit_price': '0.00000001' if order_side == 'sell' else '100000',
           'order_type': 'limit',
         })
-       self.user_stream.batch(orders)
-quedex_public_key = open("quedex-public-key.asc", "r").read()
-exchange = Exchange(quedex_public_key, 'wss://api.quedex.net')
-
-trader_private_key = open("trader-private-key.asc", "r").read()
-account_id = open("account-id", "r").read()
-trader = Trader(trader_private_key, '83745263748')
-trader.decrypt_private_key('s3cret')
-
-user_stream = UserStream(exchange, trader, SimpleUserListener)
-market_stream = MarketStream(exchange, SimpleMarketListener)
+        # use batch whenever a number of orders is placed at once
+        user_stream.batch(orders)
+user_stream.add_listener(SimpleUserListener())
+connectWS(MarketStreamClientFactory(market_stream), ssl.ClientContextFactory())
+connectWS(UserStreamClientFactory(user_stream), ssl.ClientContextFactory())
 reactor.run()
