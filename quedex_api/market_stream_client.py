@@ -1,7 +1,5 @@
 from autobahn.twisted.websocket import WebSocketClientFactory, WebSocketClientProtocol
 
-pubkey = None
-
 
 class MarketStreamClientProtocol(WebSocketClientProtocol):
 
