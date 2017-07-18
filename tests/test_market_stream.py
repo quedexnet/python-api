@@ -128,6 +128,22 @@ class TestMarketStream(TestCase):
     self.assertNotEquals(self.listener.order_book, None)
     self.assertNotEquals(listener2.order_book, None)
 
+  def test_listener_without_all_methods_implemented(self):
+    # listener that does not inherit from MarketStreamListener
+    class Listener(object):
+      def __init__(self):
+        self.order_book = None
+      def on_order_book(self, order_book):
+        self.order_book = order_book
+
+    listener = Listener()
+    self.market_stream.add_listener(listener)
+
+    self.market_stream.on_message(market_stream_fixtures.order_book_str)
+    # does not crash when receiving something it does not have a listener method for
+    self.market_stream.on_message(market_stream_fixtures.trade_str)
+
+    self.assertNotEquals(listener.order_book, None)
 
 class TestListener(MarketStreamListener):
   def __init__(self):
