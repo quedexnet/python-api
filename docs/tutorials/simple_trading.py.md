@@ -34,13 +34,12 @@ from time import time
 
 Next, we will create basic entities required to connect to Quedex - `Exchange` and `Trader`. These
 are provided with the public PGP key of Quedex (TODO: how get it) and your encrypted PGP private key
-(TODO: how to get it), which are read from files and hardcoded API url (this should be substituted
-with `wss://api.quedex.net` in real code), account id and private key password (we highly recommend 
-not storing the latter two in the code in a production set up!).
+(TODO: how to get it), which are read from files and hardcoded API url, account id and private key 
+password (we highly recommend not storing the latter two in the code in a production set up!).
 
 ```python
 quedex_public_key = open("keys/quedex-public-key.asc", "r").read()
-exchange = Exchange(quedex_public_key, 'ws://localhost:8080')
+exchange = Exchange(quedex_public_key, 'wss://api.quedex.net')
 
 trader_private_key = open("keys/trader-private-key.asc", "r").read()
 trader = Trader(trader_private_key, '83745263748')
