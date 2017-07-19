@@ -10,3 +10,7 @@ class Exchange(object):
   @property
   def market_stream_url(self):
     return self.api_url + '/market_stream'
+
+  @property
+  def user_stream_url(self):
+    return self.api_url + '/user_stream'
