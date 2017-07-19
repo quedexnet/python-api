@@ -94,7 +94,7 @@ class MarketStreamListener(object):
     :param session_state: a dict of the following format:
       {
         "type": "session_state",
-        "state: "opening_auction"/"continuous"/"auction"/"closing_auction"/"no_trading"
+        "state": "opening_auction"/"continuous"/"auction"/"closing_auction"/"no_trading"
       }
     """
     pass
