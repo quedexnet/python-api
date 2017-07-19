@@ -131,8 +131,7 @@ class MarketStream(object):
 
   def __init__(self, exchange):
     self._exchange = exchange
-    self._quedex_key = pgpy.PGPKey()
-    self._quedex_key.parse(exchange.public_key)
+    self._quedex_key = exchange.public_key
     self._listeners = []
 
   def add_listener(self, market_stream_listener):
