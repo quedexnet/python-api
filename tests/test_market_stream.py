@@ -150,6 +150,12 @@ class TestMarketStream(TestCase):
 
     self.assertEqual(self.listener.disconnect_message, 'maintenance')
 
+  def test_ready(self):
+    self.market_stream.on_ready()
+
+    self.assertTrue(self.listener.ready)
+
+
 class TestListener(MarketStreamListener):
   def __init__(self):
     self.message = None
@@ -160,6 +166,7 @@ class TestListener(MarketStreamListener):
     self.session_state = None
     self.error = None
     self.disconnect_message = None
+    self.ready = False
 
   def on_message(self, message):
     self.message = message
@@ -184,3 +191,6 @@ class TestListener(MarketStreamListener):
 
   def on_disconnect(self, message):
     self.disconnect_message = message
+
+  def on_ready(self):
+    self.ready = True

@@ -2,6 +2,8 @@ from autobahn.twisted.websocket import WebSocketClientFactory, WebSocketClientPr
 
 
 class MarketStreamClientProtocol(WebSocketClientProtocol):
+  def onOpen(self):
+    self.factory.market_stream.on_ready()
 
   def onMessage(self, payload, isbinary):
     self.factory.market_stream.on_message(payload)
