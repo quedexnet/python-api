@@ -1,8 +1,10 @@
+import pgpy
 
 
 class Exchange(object):
   def __init__(self, public_key, api_url):
-    self.public_key = public_key
+    self.public_key = pgpy.PGPKey()
+    self.public_key.parse(public_key)
     self.api_url = api_url
 
   @property
