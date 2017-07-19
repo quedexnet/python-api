@@ -4,6 +4,12 @@ import pgpy
 
 
 class MarketStreamListener(object):
+  def on_ready(self):
+    """
+    Called when MarketStream is ready to start receiving messages.
+    """
+    pass
+
   def on_message(self, message):
     """
     Called on every received message.
@@ -179,6 +185,11 @@ class MarketStream(object):
     for listener in self._listeners:
       if hasattr(listener, 'on_disconnect'):
         listener.on_disconnect(message)
+
+  def on_ready(self):
+    for listener in self._listeners:
+      if hasattr(listener, 'on_ready'):
+        listener.on_ready()
 
   @property
   def market_stream_url(self):
