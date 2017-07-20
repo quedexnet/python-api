@@ -4,9 +4,9 @@ from autobahn.twisted.websocket import WebSocketClientFactory, WebSocketClientPr
 class UserStreamClientProtocol(WebSocketClientProtocol):
   def __init__(self):
     super(UserStreamClientProtocol, self).__init__()
-    self.factory.user_stream.send_message = self.sendMessage
 
   def onOpen(self):
+    self.factory.user_stream.send_message = self.sendMessage
     self.factory.user_stream.initialize()
 
   def onMessage(self, payload, isbinary):
