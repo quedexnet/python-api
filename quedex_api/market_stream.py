@@ -120,13 +120,15 @@ class MarketStreamListener(object):
 
 class MarketStream(object):
   """
-  Use this class to connect to the market stream at Quedex, i.e. to the stream of publicly available, realtime trading
-  data with order books, trades, etc. The data comes in the form of PGP-clearsigned JSON messages - all parsing and
-  verification is handled internally and the client receives Python objects (dicts with the data).
+  Use this class to connect to the market stream at Quedex, i.e. to the stream of publicly
+  available, realtime trading data with order books, trades, etc. The data comes in the form of
+  PGP-clearsigned JSON messages - all parsing and verification is handled internally and the client
+  receives Python objects (dicts with the data).
 
-  To use this class, implement your own MarketStreamListener (by inheriting from the base class) and add an instance via
-  add_listener method. Methods of listener will be called when respective objects arrive on the market stream. For the
-  format of the data see comments on MarketStreamListener.
+  To use this class, implement your own MarketStreamListener (you may inherit from the base class,
+  but that's not necessary) and add an instance via add_listener method. Methods of listener will
+  be called when respective objects arrive on the market stream. For the format of the data see
+  comments on MarketStreamListener.
   """
 
   def __init__(self, exchange):
