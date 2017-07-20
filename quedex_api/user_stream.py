@@ -167,6 +167,8 @@ class UserStream(object):
     self._nonce_group = nonce_group
     self._nonce = None
     self._initialized = False
+    self._batching = False
+    self._batch = None
 
   def add_listener(self, listener):
     self._listeners.append(listener)
@@ -190,7 +192,11 @@ class UserStream(object):
       raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
     place_order_command['type'] = 'place_order'
     check_place_order(place_order_command)
-    self._encrypt_send(self._set_nonce_account_id(place_order_command))
+    self._set_nonce_account_id(place_order_command)
+    if self._batching:
+      self._batch.append(place_order_command)
+    else:
+      self._encrypt_send(place_order_command)
 
   def cancel_order(self, cancel_order_command):
     """
@@ -203,7 +209,11 @@ class UserStream(object):
       raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
     check_cancel_order(cancel_order_command)
     cancel_order_command['type'] = 'cancel_order'
-    self._encrypt_send(self._set_nonce_account_id(cancel_order_command))
+    self._set_nonce_account_id(cancel_order_command)
+    if self._batching:
+      self._batch.append(cancel_order_command)
+    else:
+      self._encrypt_send(cancel_order_command)
 
   def modify_order(self, modify_order_command):
     """
@@ -218,7 +228,11 @@ class UserStream(object):
       raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
     check_modify_order(modify_order_command)
     modify_order_command['type'] = 'modify_order'
-    self._encrypt_send(self._set_nonce_account_id(modify_order_command))
+    self._set_nonce_account_id(modify_order_command)
+    if self._batching:
+      self._batch.append(modify_order_command)
+    else:
+      self._encrypt_send(modify_order_command)
 
   def batch(self, order_commands):
     """
@@ -252,6 +266,28 @@ class UserStream(object):
       else:
         raise ValueError('Unsupported command type: ' + type)
       self._set_nonce_account_id(command)
+    self._send_batch_no_checks(order_commands)
+
+  def start_batch(self):
+    """
+    After this method is called all calls to place_order, cancel_order, modify_order result in
+    caching of the commands which are then sent once send_batch is called.
+    """
+    self._batch = []
+    self._batching = True
+
+  def send_batch(self):
+    """
+    Sends batch created from calling place_order, cancel_order, modify_order after calling
+    start_batch.
+    """
+    if not self._batching:
+      raise Exception('send_batch called without calling start_batch first')
+    self._send_batch_no_checks(self._batch)
+    self._batch = None
+    self._batching = False
+
+  def _send_batch_no_checks(self, order_commands):
     self._encrypt_send({
       'type': 'batch',
       'batch': order_commands,
