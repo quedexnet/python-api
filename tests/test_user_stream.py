@@ -293,6 +293,35 @@ class TestUserStream(TestCase):
       ]
     })
 
+  def test_start_send_batch(self):
+    self.initialize()
+
+    self.user_stream.start_batch()
+    self.user_stream.modify_order({'new_limit_price': '9.87', 'client_order_id': 23,})
+    self.user_stream.cancel_order({'client_order_id': 22})
+    self.user_stream.send_batch()
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'batch',
+      'batch': [
+        {
+          'type': 'modify_order',
+          'new_limit_price': '9.87',
+          'client_order_id': 23,
+          'account_id': '123456789',
+          'nonce': 7,
+          'nonce_group': 5,
+        },
+        {
+          'type': 'cancel_order',
+          'account_id': '123456789',
+          'client_order_id': 22,
+          'nonce': 8,
+          'nonce_group': 5,
+        }
+      ]
+    })
+
   def serialize_to_trader(self, entity):
     return json.dumps({
       'type': 'data',
