@@ -300,9 +300,6 @@ class UserStream(object):
   def on_disconnect(self, message):
     self._call_listeners('on_disconnect', message)
 
-  def on_ready(self):
-    self._call_listeners('on_ready')
-
   def _set_nonce_account_id(self, entity):
     self._nonce += 1
     entity['nonce'] = self._nonce

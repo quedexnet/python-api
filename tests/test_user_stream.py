@@ -191,11 +191,6 @@ class TestUserStream(TestCase):
 
     self.assertEqual(self.listener.disconnect_message, 'maintenance')
 
-  def test_ready(self):
-    self.user_stream.on_ready()
-
-    self.assertTrue(self.listener.ready)
-
   def test_placing_order(self):
     self.initialize()
 
