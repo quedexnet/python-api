@@ -34,16 +34,16 @@ from time import time
 
 Next, we will create basic entities required to connect to Quedex - `Exchange` and `Trader`. These
 are provided with the public PGP key of Quedex (TODO: how get it) and your encrypted PGP private key
-(TODO: how to get it), which are read from files and hardcoded API url, account id and private key 
-password (we highly recommend not storing the latter two in the code in a production set up!).
+(TODO: how to get it), which are read from files and hardcoded API url and account id (it is highly
+advisable to use an encrypted key in a production setup - in such a case you'd decrypt it with
+`trader.decrypt_private_key('password')`).
 
 ```python
 quedex_public_key = open("keys/quedex-public-key.asc", "r").read()
 exchange = Exchange(quedex_public_key, 'wss://api.quedex.net')
 
 trader_private_key = open("keys/trader-private-key.asc", "r").read()
-trader = Trader(trader_private_key, '83745263748')
-trader.decrypt_private_key('s3cret')
+trader = Trader('83745263748', trader_private_key)
 ```
 
 Now we may create the streams, which will be used to communicated with the exchange.
@@ -84,11 +84,11 @@ class SimpleMarketListener(MarketStreamListener):
     futures = [instrument for instrument in instrument_data['data'].values() if instrument['type'] == 'futures'][0]
     selected_futures_id = futures['instrument_id']
 
-  def on_order_book(self, order_book):
+  def on_order_book(self, order_book):  
     if order_book['instrument_id'] != selected_futures_id:
       return 
     bids = order_book['bids']
-    if bids and (not bids[0] or bids[0][0] > sell_threshold):
+    if bids and (not bids[0] or float(bids[0][0]) > sell_threshold):
       user_stream.place_order({
         'instrument_id': selected_futures_id, 
         'client_order_id':  get_order_id(),
@@ -123,14 +123,14 @@ class SimpleUserListener(UserStreamListener):
     open_positions[open_position['instrument_id']] = open_position
     
   def on_account_state(self, account_state):
-    if account_state['balance'] < balance_threshold:
+    if float(account_state['balance']) < balance_threshold:
        # panic
        orders = []
        for open_position in open_positions.values():
         order_side = 'buy' if open_position['side'] == 'short' else 'sell'
         orders.append({
           'type': 'place_order',
-          'instrument_id': open_position['instrument_ud'], 
+          'instrument_id': open_position['instrument_id'], 
           'client_order_id':  get_order_id(),
           'side': order_side,
           'quantity': open_position['quantity'],
@@ -154,14 +154,21 @@ would also have to control which of our orders get placed (see `on_order_placed`
 ## 5. Connecting to WebSocket and running the strategy
 
 Once we've created the streams and defined our domain logic, we are ready to connect to the
-WebSockets.
+WebSockets. Please notice that we must wait for `UserStream` to be initialized before we start
+receiving messages on `MarketStream`, because we want to send orders on `UserStream` when events 
+on `MarketStream` arrive - this is achieved by connecting `MarketStream` when 
+`UserStreamListener.on_ready` callback is called.
 
 ```python
-connectWS(MarketStreamClientFactory(market_stream), ssl.ClientContextFactory())
+class ReadyStateUserListener(UserStreamListener):
+  def on_ready(self):
+    connectWS(MarketStreamClientFactory(market_stream), ssl.ClientContextFactory())
+user_stream.add_listener(ReadyStateUserListener())
+    
 connectWS(UserStreamClientFactory(user_stream), ssl.ClientContextFactory())
 ```
 
-And finally run all the components with Twisted's reactor.
+And finally, let's run all the components with Twisted's reactor.
 
 ```python
 reactor.run()

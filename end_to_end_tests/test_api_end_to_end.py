@@ -1,6 +1,5 @@
 from threading import Event, Thread
 from unittest import TestCase
-from multiprocessing import Process
 import json
 
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
@@ -37,13 +36,7 @@ class TestApiEndToEnd(TestCase):
       reactor.run(installSignalHandlers=False)
     Thread(target=run_server).start()
 
-    def run_client():
-      from examples import simple_trading
-    self.client_process = Process(target=run_client)
-    self.client_process.start()
-
   def tearDown(self):
-    self.client_process.terminate()
     reactor.callFromThread(reactor.stop)
 
   def test_interaction_with_client(self):
@@ -51,7 +44,9 @@ class TestApiEndToEnd(TestCase):
       self.fail('Timed out waiting for the client')
 
     self.assertEqual(messages[0], {
-      'nonce': 1,
+      'account_id': '83745263748',
+      'type': 'place_order',
+      'nonce': 2,
       'nonce_group': 5,
       'instrument_id': '71',
       'client_order_id': 1,
@@ -61,7 +56,9 @@ class TestApiEndToEnd(TestCase):
       'order_type': 'limit',
     })
     self.assertEqual(messages[1], {
-      'nonce': 2,
+      'account_id': '83745263748',
+      'type': 'place_order',
+      'nonce': 3,
       'nonce_group': 5,
       'instrument_id': '71',
       'client_order_id': 2,
@@ -71,14 +68,19 @@ class TestApiEndToEnd(TestCase):
       'order_type': 'limit',
     })
     self.assertEqual(messages[2], {
-      'nonce': 3,
-      'nonce_group': 5,
-      'instrument_id': '71',
-      'client_order_id': 3,
-      'side': 'buy',
-      'quantity': 999,
-      'limit_price': '100000',
-      'order_type': 'limit',
+      'type': 'batch',
+      'batch': [{
+        'account_id': '83745263748',
+        'type': 'place_order',
+        'nonce': 4,
+        'nonce_group': 5,
+        'instrument_id': '71',
+        'client_order_id': 3,
+        'side': 'buy',
+        'quantity': 123,
+        'limit_price': '100000',
+        'order_type': 'limit',
+      }]
     })
 
 
@@ -89,9 +91,20 @@ class UserStreamServerProtocol(WebSocketServerProtocol):
     user_stream_sender = self.sendMessage
 
   def onMessage(self, payload, is_binary):
-    messages.append(decrypt_verify(payload))
-    if len(messages) == 3:
-      client_messages_received_lock.set()
+    message = decrypt_verify(payload)
+    if message['type'] == 'get_last_nonce':
+      user_stream_sender(sign_encrypt({
+        'type': 'last_nonce',
+        'last_nonce': 0,
+      }))
+    elif message['type'] == 'subscribe':
+      user_stream_sender(sign_encrypt({
+        'type': 'subscribed',
+      }))
+    else:
+      messages.append(message)
+      if len(messages) == 3:
+        client_messages_received_lock.set()
 
 
 class MarketStreamServerProtocol(WebSocketServerProtocol):
@@ -114,16 +127,18 @@ class MarketStreamServerProtocol(WebSocketServerProtocol):
     }))
     self.sendMessage(sign({
       'type': 'order_book',
+      'instrument_id': '72',
+      'bids': [['0.002', 10]],
+      'asks': [['0.00042016', 10]],
+    }))
+    self.sendMessage(sign({
+      'type': 'order_book',
       'instrument_id': '71',
       'bids': [['0.003', 10]],
       'asks': [['0.00042016', 10]],
     }))
 
     # send messages on user stream here, to maintain the order of events
-    user_stream_sender(sign_encrypt({
-      'type': 'last_nonce',
-      'last_nonce': 0,
-    }))
     user_stream_sender(sign_encrypt({
       'type': 'open_position',
       'instrument_id': '71',
@@ -141,15 +156,15 @@ class MarketStreamServerProtocol(WebSocketServerProtocol):
 
 
 def sign(object):
-  message = pgpy.PGPMessage.from_blob(json.dumps(object))
+  message = pgpy.PGPMessage.new(json.dumps(object))
   message |= exchange_key.sign(message)
-  return str(message)
+  return json.dumps({'type': 'data', 'data': str(message)})
 
 
 def sign_encrypt(object):
-  message = pgpy.PGPMessage.from_blob(json.dumps(object))
+  message = pgpy.PGPMessage.new(json.dumps([object]))
   message |= exchange_key.sign(message)
-  return str(trader_key.encrypt(message))
+  return json.dumps({'type': 'data', 'data': str(trader_key.encrypt(message))})
 
 
 def decrypt_verify(message):
