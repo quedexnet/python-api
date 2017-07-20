@@ -160,9 +160,8 @@ class UserStream(object):
     self.send_message = None
     self.user_stream_url = exchange.user_stream_url
 
-    self._quedex_key = exchange.public_key
-    self._trader_key = trader.private_key
-    self._account_id = trader.account_id
+    self._exchange = exchange
+    self._trader = trader
 
     self._listeners = []
     self._nonce_group = nonce_group
@@ -250,7 +249,7 @@ class UserStream(object):
     self._encrypt_send({
       'type': 'get_last_nonce',
       'nonce_group': self._nonce_group,
-      'account_id': self._account_id
+      'account_id': self._trader.account_id
     })
 
   def on_message(self, message_wrapper_str):
@@ -296,18 +295,18 @@ class UserStream(object):
     self._nonce += 1
     entity['nonce'] = self._nonce
     entity['nonce_group'] = self._nonce_group
-    entity['account_id'] = self._account_id
+    entity['account_id'] = self._trader.account_id
     return entity
 
   def _encrypt_send(self, entity):
     message = pgpy.PGPMessage.new(json.dumps(entity))
-    message |= self._trader_key.sign(message)
-    self.send_message(str(self._quedex_key.encrypt(message)))
+    message |= self._trader.private_key.sign(message)
+    self.send_message(str(self._exchange.public_key.encrypt(message)))
 
   def _decrypt(self, encrypted_str):
     encrypted = pgpy.PGPMessage().from_blob(encrypted_str)
-    decrypted = self._trader_key.decrypt(encrypted)
-    if not self._quedex_key.verify(decrypted):
+    decrypted = self._trader.private_key.decrypt(encrypted)
+    if not self._exchange.public_key.verify(decrypted):
       raise AssertionError('Verification failed for message: ' + decrypted)
     return json.loads(decrypted.message)
 
