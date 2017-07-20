@@ -289,8 +289,8 @@ class UserStream(object):
         self._call_listeners('on_ready')
         return
 
-      self._call_listeners('on_' + entity['type'], entity)
       self._call_listeners('on_message', entity)
+      self._call_listeners('on_' + entity['type'], entity)
     except Exception as e:
       self.on_error(e)
 
