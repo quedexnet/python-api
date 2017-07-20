@@ -178,7 +178,7 @@ class UserStream(object):
     """
     :param place_order_command: a dict of the following format:
       {
-        "client_order_id": <integer id unique among orders>,
+        "client_order_id": <positive integer id unique among orders>,
         "instrument_id": "<string id of the instrument>",
         "order_type": "limit",
         "limit_price": "<decimal as string>",
@@ -189,17 +189,19 @@ class UserStream(object):
     if not self._initialized:
       raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
     place_order_command['type'] = 'place_order'
+    check_place_order(place_order_command)
     self._encrypt_send(self._set_nonce_account_id(place_order_command))
 
   def cancel_order(self, cancel_order_command):
     """
     :param cancel_order_command: a dict of the following format:
       {
-        "client_order_id": <integer id of the order to cancel>,
+        "client_order_id": <positive integer id of the order to cancel>,
       }
     """
     if not self._initialized:
       raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
+    check_cancel_order(cancel_order_command)
     cancel_order_command['type'] = 'cancel_order'
     self._encrypt_send(self._set_nonce_account_id(cancel_order_command))
 
@@ -207,13 +209,14 @@ class UserStream(object):
     """
     :param modify_order_command: a dict of the following format:
       {
-        "client_order_id": <integer id of the order to modify>,
+        "client_order_id": <positive integer id of the order to modify>,
         "new_limit_price": "<decimal as string>",
         "new_quantity": <integer>,
       }
     """
     if not self._initialized:
       raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
+    check_modify_order(modify_order_command)
     modify_order_command['type'] = 'modify_order'
     self._encrypt_send(self._set_nonce_account_id(modify_order_command))
 
@@ -239,6 +242,15 @@ class UserStream(object):
     if not self._initialized:
       raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
     for command in order_commands:
+      type = command['type']
+      if type == 'place_order':
+        check_place_order(command)
+      elif type == 'cancel_order':
+        check_cancel_order(command)
+      elif type == 'modify_order':
+        check_modify_order(command)
+      else:
+        raise ValueError('Unsupported command type: ' + type)
       self._set_nonce_account_id(command)
     self._encrypt_send({
       'type': 'batch',
@@ -314,3 +326,42 @@ class UserStream(object):
     for listener in self._listeners:
       if hasattr(listener, method_name):
         getattr(listener, method_name)(*args, **kwargs)
+
+
+def check_place_order(place_order):
+  check_positive_int(place_order, 'client_order_id')
+  check_positive_decimal(place_order, 'limit_price')
+  check_positive_int(place_order, 'quantity')
+  check_positive_int(place_order, 'instrument_id')
+  side = place_order['side']
+  if side.lower() != 'buy' and side.lower() != 'sell':
+    raise ValueError('side has to be either "buy" or "sell", got: %s' % side)
+  order_type = place_order['order_type']
+  if order_type.lower() != 'limit':
+    raise ValueError('The only supported order_type is limit currently')
+
+
+def check_cancel_order(cancel_order):
+  check_positive_int(cancel_order, 'client_order_id')
+
+
+def check_modify_order(modify_order):
+  check_positive_int(modify_order, 'client_order_id')
+  if 'new_limit_price' in modify_order:
+    check_positive_decimal(modify_order, 'new_limit_price')
+  if 'new_quantity' in modify_order:
+    check_positive_int(modify_order, 'new_quantity')
+  if 'new_limit_price' not in modify_order and 'new_quantity' not in modify_order:
+    raise ValueError('modify_order should have new_limit_price or new_quantity')
+
+
+def check_positive_decimal(_dict, field_name):
+  number = _dict[field_name]
+  if not float(number) > 0:
+    raise ValueError('%s=%s should be greater than 0' % (field_name, number))
+
+
+def check_positive_int(_dict, field_name):
+  _id = _dict[field_name]
+  if not int(_id) > 0:
+    raise ValueError('%s=%s should be greater than 0' % (field_name, _id))

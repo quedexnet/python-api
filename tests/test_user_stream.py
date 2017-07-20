@@ -199,7 +199,15 @@ class TestUserStream(TestCase):
   def test_placing_order(self):
     self.initialize()
 
-    self.user_stream.place_order({'price': '9.87', 'client_order_id': 15})
+    self.user_stream.place_order({
+      'price': '9.87',
+      'client_order_id': 15,
+      'instrument_id': '76',
+      'quantity': 6,
+      'side': 'buy',
+      'order_type': 'limit',
+      'limit_price': '4.5',
+    })
 
     self.assertEqual(self.decrypt_from_trader(self.sent_message), {
       'type': 'place_order',
@@ -208,6 +216,11 @@ class TestUserStream(TestCase):
       'nonce_group': 5,
       'price': '9.87',
       'client_order_id': 15,
+      'instrument_id': '76',
+      'quantity': 6,
+      'side': 'buy',
+      'order_type': 'limit',
+      'limit_price': '4.5',
     })
 
   def test_cancelling_order(self):
@@ -242,8 +255,9 @@ class TestUserStream(TestCase):
 
     self.user_stream.batch([
       {
-        'type': 'place_order',
-        'price': '9.87',
+        'type': 'modify_order',
+        'new_limit_price': '9.87',
+        'client_order_id': 23,
       },
       {
         'type': 'cancel_order',
@@ -255,9 +269,10 @@ class TestUserStream(TestCase):
       'type': 'batch',
       'batch': [
         {
-          'type': 'place_order',
+          'type': 'modify_order',
+          'new_limit_price': '9.87',
+          'client_order_id': 23,
           'account_id': '123456789',
-          'price': '9.87',
           'nonce': 7,
           'nonce_group': 5,
         },
