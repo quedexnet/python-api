@@ -140,6 +140,21 @@ class UserStreamListener(object):
 
 
 class UserStream(object):
+  """
+  Use this class to connect to the user stream at Quedex, i.e. to the stream of private, realtime
+  data for your account with order confirmations, funds updates, etc.; the stream also
+  allows sending commands to the exchange such as placing, cancelling orders, etc. The data is
+  exchanged in the form of PGP-encrypted JSON messages - all parsing, decryption/encryption and
+  verification/signing is handled internally and the client receives and sends Python objects (dicts
+  with data).
+
+  To use this class, implement your own UserStreamListener (you may inherit from the base class,
+  but that's not necessary) and add an instance via add_listener method. Methods of listener will
+  be called when respective objects arrive on the market stream. For the format of the data see
+  comments on UserStreamListener. To send commands to the exchange call respective methods of this
+  class - see their comments for the format of the data.
+  """
+
   def __init__(self, exchange, trader, nonce_group=5):
     super(UserStream, self).__init__()
     self.send_message = None
