@@ -278,19 +278,18 @@ class UserStream(object):
           self.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
         return
 
-      entity = self._decrypt(message_wrapper['data'])
+      for entity in self._decrypt(message_wrapper['data']):
+        if entity['type'] == 'last_nonce':
+          self._nonce = entity['last_nonce']
+          self._encrypt_send(self._set_nonce_account_id({'type': 'subscribe'}))
+          return
+        elif entity['type'] == 'subscribed':
+          self._initialized = True
+          self._call_listeners('on_ready')
+          return
 
-      if entity['type'] == 'last_nonce':
-        self._nonce = entity['last_nonce']
-        self._encrypt_send(self._set_nonce_account_id({'type': 'subscribe'}))
-        return
-      elif entity['type'] == 'subscribed':
-        self._initialized = True
-        self._call_listeners('on_ready')
-        return
-
-      self._call_listeners('on_message', entity)
-      self._call_listeners('on_' + entity['type'], entity)
+        self._call_listeners('on_message', entity)
+        self._call_listeners('on_' + entity['type'], entity)
     except Exception as e:
       self.on_error(e)
 

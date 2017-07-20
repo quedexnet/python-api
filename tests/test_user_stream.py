@@ -126,6 +126,18 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.order_filled, order_filled)
     self.assertEqual(self.listener.message, order_filled)
 
+  def test_receives_batch(self):
+    filled1 = {'type': 'order_filled', 'leaves_quantity': 4}
+    filled2 = {'type': 'order_filled', 'leaves_quantity': 5}
+    self.user_stream.on_message(json.dumps({
+      'type': 'data',
+      'data': sign_encrypt([filled1, filled2], self.quedex_private_key, self.trader_public_key),
+    }))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.messages[0], filled1)
+    self.assertEqual(self.listener.messages[1], filled2)
+
   def test_receives_error_on_data_parsing_error(self):
     self.user_stream.on_message('not json')
 
@@ -284,7 +296,7 @@ class TestUserStream(TestCase):
   def serialize_to_trader(self, entity):
     return json.dumps({
       'type': 'data',
-      'data': sign_encrypt(entity, self.quedex_private_key, self.trader_public_key),
+      'data': sign_encrypt([entity], self.quedex_private_key, self.trader_public_key),
     })
 
   def decrypt_from_trader(self, message):
@@ -309,7 +321,7 @@ class TestListener(UserStreamListener):
     self.order_cancel_failed = None
     self.account_state = None
     self.order_modified = None
-    self.message = None
+    self.messages = []
     self.order_modification_failed = None
     self.open_position = None
     self.error = None
@@ -318,6 +330,10 @@ class TestListener(UserStreamListener):
     self.order_cancelled = None
     self.order_filled = None
     self.ready = False
+
+  @property
+  def message(self):
+    return self.messages[0] if self.messages else None
 
   def on_ready(self):
     self.ready = True
@@ -335,7 +351,7 @@ class TestListener(UserStreamListener):
     self.order_modified = order_modified
 
   def on_message(self, message):
-    self.message = message
+    self.messages.append(message)
 
   def on_order_modification_failed(self, order_modification_failed):
     self.order_modification_failed = order_modification_failed
