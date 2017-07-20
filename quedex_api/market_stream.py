@@ -168,14 +168,14 @@ class MarketStream(object):
 
   def _parse_message(self, message_str):
     message = json.loads(message_str)
+    for listener in self._listeners:
+      if hasattr(listener, 'on_message'):
+        listener.on_message(message)
+
     listener_name = 'on_' + message['type']
     for listener in self._listeners:
       if hasattr(listener, listener_name):
         getattr(listener, listener_name)(message)
-
-    for listener in self._listeners:
-      if hasattr(listener, 'on_message'):
-        listener.on_message(message)
 
   def on_error(self, error):
     for listener in self._listeners:
