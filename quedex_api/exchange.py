@@ -2,9 +2,8 @@ import pgpy
 
 
 class Exchange(object):
-  def __init__(self, public_key, api_url):
-    self.public_key = pgpy.PGPKey()
-    self.public_key.parse(public_key)
+  def __init__(self, public_key_str, api_url):
+    self._public_key_str = public_key_str
     self.api_url = api_url
 
   @property
@@ -14,3 +13,9 @@ class Exchange(object):
   @property
   def user_stream_url(self):
     return self.api_url + '/user_stream'
+
+  @property
+  def public_key(self):
+    public_key = pgpy.PGPKey()
+    public_key.parse(self._public_key_str)
+    return public_key
