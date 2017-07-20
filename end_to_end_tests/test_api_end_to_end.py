@@ -153,7 +153,7 @@ def sign_encrypt(object):
 
 
 def decrypt_verify(message):
-  decrypted = exchange_key.decrypt(message)
+  decrypted = exchange_key.decrypt(pgpy.PGPMessage.from_blob(message))
   if not trader_key.verify(decrypted):
     raise AssertionError('Verification failed for message: ' + decrypted)
-  return json.loads(str(decrypted))
+  return json.loads(decrypted.message)
