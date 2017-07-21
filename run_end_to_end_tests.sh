@@ -22,6 +22,8 @@ CLIENT_PID=$!
 wait $TESTS_PID
 TESTS_RESULT=$?
 
+kill $CLIENT_PID
+
 sed -i -e 's/ws:\/\/localhost:8080/wss:\/\/api.quedex.net/g' examples/simple_trading.py
 
 exit $TESTS_RESULT
