@@ -1,4 +1,4 @@
 autobahn==17.6.2
 twisted==17.5.0
 pyOpenSSL==17.1.0
-PGPy==0.4.1
+-e git+https://github.com/SecurityInnovation/PGPy.git@e183c68#egg=PGPy
