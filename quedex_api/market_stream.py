@@ -18,6 +18,9 @@ class MarketStreamListener(object):
 
   def on_instrument_data(self, instrument_data):
     """
+    Called when data about all currently traded instruments are received on the stream - it is
+    guaranteed that it will be the first message received before any other.
+
     :param instrument_data: a dict of the following format:
       {
         "type": "instrument_data",
