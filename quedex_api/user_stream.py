@@ -322,7 +322,7 @@ class UserStream(object):
         elif entity['type'] == 'subscribed':
           self._initialized = True
           self._call_listeners('on_ready')
-          return
+          continue
 
         self._call_listeners('on_message', entity)
         self._call_listeners('on_' + entity['type'], entity)
