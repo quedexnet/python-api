@@ -32,10 +32,10 @@ class TestUserStream(TestCase):
       'nonce_group': 5,
     })
 
-    self.user_stream.on_message(self.serialize_to_trader({
+    self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'last_nonce',
       'last_nonce': 5,
-    }))
+    }]))
     self.assertFalse(self.user_stream._initialized)
     self.assertEqual(self.user_stream._nonce, 6)
     self.assertEqual(self.decrypt_from_trader(self.sent_message), {
@@ -45,18 +45,18 @@ class TestUserStream(TestCase):
       'nonce_group': 5,
     })
 
-    self.user_stream.on_message(self.serialize_to_trader({
+    self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'subscribed',
       'nonce': 5,
       'nonce_group': 5,
-    }))
+    }]))
     self.assertTrue(self.user_stream._initialized)
     self.assertTrue(self.listener.ready)
     self.assertEqual(self.listener.error, None)
 
   def test_receiving_account_state(self):
     account_state = {'type': 'account_state', 'balance': '3.1416'}
-    self.user_stream.on_message(self.serialize_to_trader(account_state))
+    self.user_stream.on_message(self.serialize_to_trader([account_state]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.account_state, account_state)
@@ -64,7 +64,7 @@ class TestUserStream(TestCase):
 
   def test_receiving_open_position(self):
     open_position = {'type': 'open_position', 'initial_margin': '2.5'}
-    self.user_stream.on_message(self.serialize_to_trader(open_position))
+    self.user_stream.on_message(self.serialize_to_trader([open_position]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.open_position, open_position)
@@ -72,7 +72,7 @@ class TestUserStream(TestCase):
 
   def test_receiving_order_placed(self):
     order_placed = {'type': 'order_placed', 'side': 'buy'}
-    self.user_stream.on_message(self.serialize_to_trader(order_placed))
+    self.user_stream.on_message(self.serialize_to_trader([order_placed]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.order_placed, order_placed)
@@ -80,7 +80,7 @@ class TestUserStream(TestCase):
 
   def test_receiving_order_place_failed(self):
     order_place_failed = {'type': 'order_place_failed', 'side': 'buy'}
-    self.user_stream.on_message(self.serialize_to_trader(order_place_failed))
+    self.user_stream.on_message(self.serialize_to_trader([order_place_failed]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.order_place_failed, order_place_failed)
@@ -88,7 +88,7 @@ class TestUserStream(TestCase):
 
   def test_receiving_order_cancelled(self):
     order_cancelled = {'type': 'order_cancelled', 'client_order_id': '123'}
-    self.user_stream.on_message(self.serialize_to_trader(order_cancelled))
+    self.user_stream.on_message(self.serialize_to_trader([order_cancelled]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.order_cancelled, order_cancelled)
@@ -96,7 +96,7 @@ class TestUserStream(TestCase):
 
   def test_receiving_order_cancel_failed(self):
     order_cancel_failed = {'type': 'order_cancel_failed', 'cause': 'insufficient_funds'}
-    self.user_stream.on_message(self.serialize_to_trader(order_cancel_failed))
+    self.user_stream.on_message(self.serialize_to_trader([order_cancel_failed]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.order_cancel_failed, order_cancel_failed)
@@ -104,7 +104,7 @@ class TestUserStream(TestCase):
 
   def test_receiving_order_modified(self):
     order_modified = {'type': 'order_modified', 'new_limit_price': '1.2'}
-    self.user_stream.on_message(self.serialize_to_trader(order_modified))
+    self.user_stream.on_message(self.serialize_to_trader([order_modified]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.order_modified, order_modified)
@@ -112,7 +112,7 @@ class TestUserStream(TestCase):
 
   def test_receiving_order_modification_failed(self):
     order_modification_failed = {'type': 'order_modification_failed', 'cause': 'margin_call'}
-    self.user_stream.on_message(self.serialize_to_trader(order_modification_failed))
+    self.user_stream.on_message(self.serialize_to_trader([order_modification_failed]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.order_modification_failed, order_modification_failed)
@@ -120,7 +120,7 @@ class TestUserStream(TestCase):
 
   def test_receiving_order_filled(self):
     order_filled = {'type': 'order_filled', 'leaves_quantity': 4}
-    self.user_stream.on_message(self.serialize_to_trader(order_filled))
+    self.user_stream.on_message(self.serialize_to_trader([order_filled]))
 
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.order_filled, order_filled)
@@ -161,7 +161,7 @@ class TestUserStream(TestCase):
   def test_does_not_call_removed_listener(self):
     self.user_stream.remove_listener(self.listener)
 
-    self.user_stream.on_message(self.serialize_to_trader({'type': 'order_filled', 'leaves_quantity': 4}))
+    self.user_stream.on_message(self.serialize_to_trader([{'type': 'order_filled', 'leaves_quantity': 4}]))
 
     self.assertEqual(self.listener.order_filled, None)
 
@@ -176,7 +176,7 @@ class TestUserStream(TestCase):
     self.user_stream.add_listener(listener2)
 
     order_filled = {'type': 'order_filled', 'leaves_quantity': 4}
-    self.user_stream.on_message(self.serialize_to_trader(order_filled))
+    self.user_stream.on_message(self.serialize_to_trader([order_filled]))
 
     self.assertEquals(self.listener.order_filled, order_filled)
     self.assertEquals(listener2.order_filled, order_filled)
@@ -192,9 +192,9 @@ class TestUserStream(TestCase):
     listener = Listener()
     self.user_stream.add_listener(listener)
 
-    self.user_stream.on_message(self.serialize_to_trader({'type': 'order_filled', 'leaves_quantity': 4}))
+    self.user_stream.on_message(self.serialize_to_trader([{'type': 'order_filled', 'leaves_quantity': 4}]))
     # does not crash when receiving something it does not have a listener method for
-    self.user_stream.on_message(self.serialize_to_trader({'type': 'order_placed', 'side': 'buy'}))
+    self.user_stream.on_message(self.serialize_to_trader([{'type': 'order_placed', 'side': 'buy'}]))
 
     self.assertNotEquals(listener.order_filled, None)
 
@@ -322,10 +322,31 @@ class TestUserStream(TestCase):
       ]
     })
 
+  def test_receives_welcome_pack_with_with_account_state(self):
+    self.user_stream.initialize()
+    self.user_stream.on_message(self.serialize_to_trader([{
+      'type': 'last_nonce',
+      'last_nonce': 5,
+    }]))
+    account_state = {'type': 'account_state', 'balance': '3.1416'}
+    self.user_stream.on_message(self.serialize_to_trader([
+      {
+        'type': 'subscribed',
+        'nonce': 5,
+        'nonce_group': 5,
+      },
+      account_state
+    ]))
+
+    self.assertTrue(self.listener.ready)
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.account_state, account_state)
+    self.assertEqual(self.listener.message, account_state)
+
   def serialize_to_trader(self, entity):
     return json.dumps({
       'type': 'data',
-      'data': sign_encrypt([entity], self.quedex_private_key, self.trader_public_key),
+      'data': sign_encrypt(entity, self.quedex_private_key, self.trader_public_key),
     })
 
   def decrypt_from_trader(self, message):
@@ -333,15 +354,15 @@ class TestUserStream(TestCase):
 
   def initialize(self):
     self.user_stream.initialize()
-    self.user_stream.on_message(self.serialize_to_trader({
+    self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'last_nonce',
       'last_nonce': 5,
-    }))
-    self.user_stream.on_message(self.serialize_to_trader({
+    }]))
+    self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'subscribed',
       'nonce': 5,
       'nonce_group': 5,
-    }))
+    }]))
 
 
 class TestListener(UserStreamListener):
