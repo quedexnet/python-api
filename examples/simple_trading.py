@@ -11,8 +11,6 @@ from quedex_api import (
 
 from twisted.internet import reactor, ssl
 from autobahn.twisted.websocket import connectWS
-
-from time import time
 quedex_public_key = open("keys/quedex-public-key.asc", "r").read()
 exchange = Exchange(quedex_public_key, 'wss://api.quedex.net')
 
@@ -39,7 +37,8 @@ class SimpleMarketListener(MarketStreamListener):
     if order_book['instrument_id'] != selected_futures_id:
       return 
     bids = order_book['bids']
-    if bids and (not bids[0] or float(bids[0][0]) > sell_threshold):
+    # if there are any buy orders and best price is MARKET or above threshold
+    if bids and (not bids[0][0] or float(bids[0][0]) > sell_threshold):
       user_stream.place_order({
         'instrument_id': selected_futures_id, 
         'client_order_id':  get_order_id(),

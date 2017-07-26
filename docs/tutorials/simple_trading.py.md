@@ -26,17 +26,14 @@ from quedex_api import (
 
 from twisted.internet import reactor, ssl
 from autobahn.twisted.websocket import connectWS
-
-from time import time
 ```
 
 ## 2. Setting up streams
 
 Next, we will create basic entities required to connect to Quedex - `Exchange` and `Trader`. These
-are provided with the public PGP key of Quedex (TODO: how get it) and your encrypted PGP private key
-(TODO: how to get it), which are read from files and hardcoded API url and account id (it is highly
-advisable to use an encrypted key in a production setup - in such a case you'd decrypt it with
-`trader.decrypt_private_key('password')`).
+are provided with the public PGP key of Quedex and your encrypted PGP private key, which are read 
+from files and hardcoded API url and account id (it is highly advisable to use an encrypted key in 
+a production setup - in such a case you'd decrypt it with `trader.decrypt_private_key('password')`).
 
 ```python
 quedex_public_key = open("keys/quedex-public-key.asc", "r").read()
@@ -46,7 +43,7 @@ trader_private_key = open("keys/trader-private-key.asc", "r").read()
 trader = Trader('83745263748', trader_private_key)
 ```
 
-Now we may create the streams, which will be used to communicated with the exchange.
+Now we may create the streams, which will be used to communicate with the exchange.
 
 ```python
 user_stream = UserStream(exchange, trader)
@@ -88,7 +85,8 @@ class SimpleMarketListener(MarketStreamListener):
     if order_book['instrument_id'] != selected_futures_id:
       return 
     bids = order_book['bids']
-    if bids and (not bids[0] or float(bids[0][0]) > sell_threshold):
+    # if there are any buy orders and best price is MARKET or above threshold
+    if bids and (not bids[0][0] or float(bids[0][0]) > sell_threshold):
       user_stream.place_order({
         'instrument_id': selected_futures_id, 
         'client_order_id':  get_order_id(),
@@ -174,7 +172,18 @@ And finally, let's run all the components with Twisted's reactor.
 reactor.run()
 ```
 
-## 6. Disclaimer
+## 6. Not covered in this tutorial
 
-This tutorial does not constitute any investment advice. By running the code presented here you are 
-not guaranteed to earn any bitcoins (rather the opposite).
+The following topics haven't been covered in this tutorial for clarity, but should be handled in a 
+real-world scenario:
+* error handling - `on_error` methods of both `UserStreamListener` and `MarketStreamListener` should
+  be implemented (see their documentation for details); you might also want to employ defensive
+  programming when handling events that arrive on the WebSockets,
+* reconnecting - the WebSockets may get disconnected due to networking problems or the exchange
+  temporarily going down for maintenance (e.g. during updates); you should reconnect them in such
+  a case; this may be done in one of the following ways:
+  * calling `connectWS()` in `on_disconnect` methods of `UserStreamListener` and 
+   `MarketStreamListener`,
+  * implementing your own `WebSocketClientClientFactory` which also inherits from Twisted's 
+   `ReconnectingClientFactory` as shown in 
+   [Autobahn's example](https://github.com/crossbario/autobahn-python/blob/master/examples/twisted/websocket/reconnecting/client.py).
