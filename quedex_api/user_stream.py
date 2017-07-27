@@ -6,7 +6,11 @@ import pgpy
 class UserStreamListener(object):
   def on_ready(self):
     """
-    Called when UserStream is ready to start receiving messages and sending commands.
+    Called when UserStream is ready to start receiving messages and sending commands. Immediately
+    after this method is called you will receive a "welcome pack" of messages to this listener which
+    will consist of order_placed messages for every pending order, open_position for every open
+    position and an initial account_state (see on_order_placed, on_open_position, on_account_state
+    methods, respectively).
     """
     pass
 
