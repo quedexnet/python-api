@@ -1,7 +1,7 @@
 from quedex_api import (
-  Exchange,  
-  MarketStream, 
-  MarketStreamListener, 
+  Exchange,
+  MarketStream,
+  MarketStreamListener,
   MarketStreamClientFactory,
   Trader,
   UserStream,
@@ -33,14 +33,14 @@ class SimpleMarketListener(MarketStreamListener):
     futures = [instrument for instrument in instrument_data['data'].values() if instrument['type'] == 'futures'][0]
     selected_futures_id = futures['instrument_id']
 
-  def on_order_book(self, order_book):  
+  def on_order_book(self, order_book):
     if order_book['instrument_id'] != selected_futures_id:
-      return 
+      return
     bids = order_book['bids']
     # if there are any buy orders and best price is MARKET or above threshold
     if bids and (not bids[0][0] or float(bids[0][0]) > sell_threshold):
       user_stream.place_order({
-        'instrument_id': selected_futures_id, 
+        'instrument_id': selected_futures_id,
         'client_order_id':  get_order_id(),
         'side': 'sell',
         'quantity': 1000,
@@ -63,7 +63,7 @@ class SimpleUserListener(UserStreamListener):
         order_side = 'buy' if open_position['side'] == 'short' else 'sell'
         orders.append({
           'type': 'place_order',
-          'instrument_id': open_position['instrument_id'], 
+          'instrument_id': open_position['instrument_id'],
           'client_order_id':  get_order_id(),
           'side': order_side,
           'quantity': open_position['quantity'],
