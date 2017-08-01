@@ -94,6 +94,18 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.order_cancelled, order_cancelled)
     self.assertEqual(self.listener.message, order_cancelled)
 
+  def test_receiving_order_forcefully_cancelled(self):
+    order_forcefully_cancelled = {
+      'type': 'order_forcefully_cancelled',
+      'client_order_id': '123',
+      'cause': 'settlement'
+    }
+    self.user_stream.on_message(self.serialize_to_trader([order_forcefully_cancelled]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.order_forcefully_cancelled, order_forcefully_cancelled)
+    self.assertEqual(self.listener.message, order_forcefully_cancelled)
+
   def test_receiving_order_cancel_failed(self):
     order_cancel_failed = {'type': 'order_cancel_failed', 'cause': 'insufficient_funds'}
     self.user_stream.on_message(self.serialize_to_trader([order_cancel_failed]))
@@ -378,6 +390,7 @@ class TestListener(UserStreamListener):
     self.disconnect_message = None
     self.order_placed = None
     self.order_cancelled = None
+    self.order_forcefully_cancelled = None
     self.order_filled = None
     self.ready = False
 
@@ -420,6 +433,9 @@ class TestListener(UserStreamListener):
 
   def on_order_cancelled(self, order_cancelled):
     self.order_cancelled = order_cancelled
+
+  def on_order_forcefully_cancelled(self, order_forcefully_cancelled):
+    self.order_forcefully_cancelled = order_forcefully_cancelled
 
   def on_order_filled(self, order_filled):
     self.order_filled = order_filled

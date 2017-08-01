@@ -85,6 +85,16 @@ class UserStreamListener(object):
     """
     pass
 
+  def on_order_forcefully_cancelled(self, order_forcefully_cancelled):
+    """
+        :param order_forcefully_cancelled: a dict of the following format:
+          {
+            "client_order_id": "<string id>",
+            "cause": "liquidation"/"settlement",
+          }
+        """
+    pass
+
   def on_order_cancel_failed(self, order_cancel_failed):
     """
     :param order_cancel_failed: a dict of the following format:
