@@ -170,6 +170,11 @@ class UserStream(object):
   """
 
   def __init__(self, exchange, trader, nonce_group=5):
+    """
+    :param nonce_group: value between 0 and 9, has to be different for every WebSocket connection
+                        opened to the exchange (e.g. browser and trading bot); our webapp uses
+                        nonce_group=0
+    """
     super(UserStream, self).__init__()
     self.send_message = None
     self.user_stream_url = exchange.user_stream_url
