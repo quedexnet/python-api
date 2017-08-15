@@ -286,6 +286,7 @@ class TestUserStream(TestCase):
 
     self.assertEqual(self.decrypt_from_trader(self.sent_message), {
       'type': 'batch',
+      'account_id': '123456789',
       'batch': [
         {
           'type': 'modify_order',
@@ -315,6 +316,7 @@ class TestUserStream(TestCase):
 
     self.assertEqual(self.decrypt_from_trader(self.sent_message), {
       'type': 'batch',
+      'account_id': '123456789',
       'batch': [
         {
           'type': 'modify_order',

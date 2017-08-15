@@ -69,6 +69,7 @@ class TestApiEndToEnd(TestCase):
     })
     self.assertEqual(messages[2], {
       'type': 'batch',
+      'account_id': '83745263748',
       'batch': [{
         'account_id': '83745263748',
         'type': 'place_order',

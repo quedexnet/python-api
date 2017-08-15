@@ -309,6 +309,7 @@ class UserStream(object):
   def _send_batch_no_checks(self, order_commands):
     self._encrypt_send({
       'type': 'batch',
+      'account_id': self._trader.account_id,
       'batch': order_commands,
     })
 
@@ -316,7 +317,7 @@ class UserStream(object):
     self._encrypt_send({
       'type': 'get_last_nonce',
       'nonce_group': self._nonce_group,
-      'account_id': self._trader.account_id
+      'account_id': self._trader.account_id,
     })
 
   def on_message(self, message_wrapper_str):
