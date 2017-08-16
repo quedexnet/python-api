@@ -14,6 +14,7 @@ class TestUserStream(TestCase):
     self.trader_public_key.parse(open('keys/trader-public-key.asc', 'r').read())
 
     trader = Trader('123456789', open('keys/trader-private-key.asc', 'r').read())
+    trader.decrypt_private_key('aaa')
     exchange = Exchange(open('keys/quedex-public-key.asc', 'r').read(), 'wss://url')
     self.listener = TestListener()
     self.user_stream = UserStream(exchange, trader)
