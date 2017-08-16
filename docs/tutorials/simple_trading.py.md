@@ -41,6 +41,7 @@ exchange = Exchange(quedex_public_key, 'wss://api.quedex.net')
 
 trader_private_key = open("keys/trader-private-key.asc", "r").read()
 trader = Trader('83745263748', trader_private_key)
+trader.decrypt_private_key('aaa') 
 ```
 
 Now we may create the streams, which will be used to communicate with the exchange.
