@@ -32,8 +32,8 @@ from autobahn.twisted.websocket import connectWS
 
 Next, we will create basic entities required to connect to Quedex - `Exchange` and `Trader`. These
 are provided with the public PGP key of Quedex and your encrypted PGP private key, which are read
-from files and hardcoded API url and account id (it is highly advisable to use an encrypted key in
-a production setup - in such a case you'd decrypt it with `trader.decrypt_private_key('password')`).
+from files and hardcoded API url and account id. Please read 
+[Getting Credentials](../README.md#getting-credentials) to learn where to take your credentials from.
 
 ```python
 quedex_public_key = open("keys/quedex-public-key.asc", "r").read()

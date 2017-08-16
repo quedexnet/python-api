@@ -3,6 +3,10 @@
 > The best way to communicate with [Quedex Bitcoin Derivatives Exchange](https://quedex.net)
 using Python.
 
+## Show Me Some Code
+
+Go straight to our [Simple Trading Tutorial][simple_trading.py.md].
+
 ## Why Is This Cool?
 
  * The API hides all technical concerns (transmission, encryption, serialization,
@@ -57,6 +61,18 @@ The API is designed to be flexible and may be used with various implementations 
 [`UserStreamClientProtocol`][user_stream_client.py] and [`MarketStreamClientProtocol`][
 market_stream_client.py] can be used as a reference on how to integrate [`MarketStream`][
 market_stream.py] and [`UserStream`][user_stream.py] classes with a WebSockets library.
+
+## Getting Credentials
+
+You'll need to create an instance of `Trader` to use the API (for details see 
+[Simple Trading Tutorial][simple_trading.py.md]). `Trader` needs to be provided with your account id
+and encrypted private key - you may find them in our web  application - on the trading dashboard 
+select the dropdown menu with your email address in the upper right corner and go to User Profile 
+(equivalent to visiting https://quedex.net/webapp/profile when logged in).
+
+The `Exchange` entity needs to be provided with the URL of our API, which is `wss://api.quedex.net`
+and our public key which for your convenience is bundled with the API - just import it like so
+`from quedex_api import quedex_public_key`.
 
 ## Contributing Guide
 
