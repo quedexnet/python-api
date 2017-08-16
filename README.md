@@ -35,11 +35,7 @@ To use the API in your Python project include the following in your requirements
 
 ```
 -e git+https://github.com/quedexnet/python-api.git@664e7db#egg=quedex_api
--e git+https://github.com/SecurityInnovation/PGPy.git@e183c68#egg=PGPy
 ```
-PGPy has to be temporarily included as a commit from the master branch and is not included
-as a dependency of the API, because the current version 4.0.1 does not deliver all the required
-functionality.
 
 ## Documentation
 
