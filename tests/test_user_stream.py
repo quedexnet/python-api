@@ -179,7 +179,7 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.order_filled, None)
 
   def test_keepalive_is_ignored(self):
-    self.user_stream.on_message('keepalive')
+    self.user_stream.on_message(json.dumps({'type': 'keepalive', 'timestamp': 1506958410894}))
 
     self.assertEqual(self.listener.message, None)
     self.assertEqual(self.listener.error, None)

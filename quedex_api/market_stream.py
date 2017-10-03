@@ -147,10 +147,11 @@ class MarketStream(object):
 
   def on_message(self, message_wrapper_str):
     try:
-      if message_wrapper_str == 'keepalive':
-        return
 
       message_wrapper = json.loads(message_wrapper_str)
+
+      if message_wrapper['type'] == 'keepalive':
+        return
 
       if message_wrapper['type'] == 'error':
         # error_code == maintenance accompanies exchange engine going down for maintenance which causes a graceful
