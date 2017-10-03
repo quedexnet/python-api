@@ -1,4 +1,5 @@
 from unittest import TestCase
+import json
 
 import market_stream_fixtures
 from quedex_api import MarketStream, MarketStreamListener, Exchange
@@ -118,6 +119,12 @@ class TestMarketStream(TestCase):
     self.market_stream.on_message(market_stream_fixtures.order_book_str)
 
     self.assertEqual(self.listener.order_book, None)
+
+  def test_keepalive_is_ignored(self):
+    self.market_stream.on_message(json.dumps({'type': 'keepalive', 'timestamp': 1506958410894}))
+
+    self.assertEqual(self.listener.message, None)
+    self.assertEqual(self.listener.error, None)
 
   def test_calls_multiple_added_listeners(self):
     listener2 = TestListener()
