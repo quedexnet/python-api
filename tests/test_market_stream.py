@@ -126,6 +126,12 @@ class TestMarketStream(TestCase):
     self.assertEqual(self.listener.message, None)
     self.assertEqual(self.listener.error, None)
 
+  def test_unknown_is_ignored(self):
+    self.market_stream.on_message(json.dumps({'type': 'unknown'}))
+
+    self.assertEqual(self.listener.message, None)
+    self.assertEqual(self.listener.error, None)
+
   def test_calls_multiple_added_listeners(self):
     listener2 = TestListener()
     self.market_stream.add_listener(listener2)
