@@ -329,29 +329,34 @@ class UserStream(object):
       if message_type == 'keepalive':
         return
       elif message_type == 'error':
-        # error_code == maintenance accompanies exchange engine going down for maintenance which
-        # causes graceful disconnect of the WebSocket, handled by MarketStreamListener.on_disconnect
-        if message_wrapper['error_code'] != 'maintenance':
-          self.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
-        return
+        self.process_error(message_wrapper)
       elif message_type == 'data':
-        for entity in self._decrypt(message_wrapper['data']):
-          if entity['type'] == 'last_nonce':
-            self._nonce = entity['last_nonce']
-            self._encrypt_send(self._set_nonce_account_id({'type': 'subscribe'}))
-            return
-          elif entity['type'] == 'subscribed':
-            self._initialized = True
-            self._call_listeners('on_ready')
-            continue
-
-          self._call_listeners('on_message', entity)
-          self._call_listeners('on_' + entity['type'], entity)
+        self.process_data(message_wrapper)
       else:
         # no-op
         return
     except Exception as e:
       self.on_error(e)
+
+  def process_error(self, message_wrapper):
+    # error_code == maintenance accompanies exchange engine going down for maintenance which
+    # causes graceful disconnect of the WebSocket, handled by MarketStreamListener.on_disconnect
+    if message_wrapper['error_code'] != 'maintenance':
+      self.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
+
+  def process_data(self, message_wrapper):
+    for entity in self._decrypt(message_wrapper['data']):
+      if entity['type'] == 'last_nonce':
+        self._nonce = entity['last_nonce']
+        self._encrypt_send(self._set_nonce_account_id({'type': 'subscribe'}))
+        return
+      elif entity['type'] == 'subscribed':
+        self._initialized = True
+        self._call_listeners('on_ready')
+        continue
+
+      self._call_listeners('on_message', entity)
+      self._call_listeners('on_' + entity['type'], entity)
 
   def on_error(self, error):
     self._call_listeners('on_error', error)
