@@ -154,23 +154,29 @@ class MarketStream(object):
       if message_type == 'keepalive':
         return
       elif message_type == 'error':
-        # error_code == maintenance accompanies exchange engine going down for maintenance which causes a graceful
-        # disconnect of the WebSocket, handled by MarketStreamListener.on_disconnect
-        if message_wrapper['error_code'] != 'maintenance':
-          self.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
+        self.process_error(message_wrapper)
       elif message_type == 'data':
-        clearsigned_message_str = message_wrapper['data']
-
-        clearsigned_message = pgpy.PGPMessage().from_blob(clearsigned_message_str)
-        if not self._quedex_key.verify(clearsigned_message):
-          self.on_error(Exception('Signature verification failed on message: %s' % clearsigned_message_str))
-
-        self._parse_message(clearsigned_message.message)
+        self.process_data(message_wrapper);
       else:
         # no-op
         return
     except Exception as e:
       self.on_error(e)
+
+  def process_error(self, message_wrapper):
+    # error_code == maintenance accompanies exchange engine going down for maintenance which causes a graceful
+    # disconnect of the WebSocket, handled by MarketStreamListener.on_disconnect
+    if message_wrapper['error_code'] != 'maintenance':
+      self.on_error(Exception('WebSocket error: ' + message_wrapper['error_code']))
+
+  def process_data(self, message_wrapper):
+    clearsigned_message_str = message_wrapper['data']
+
+    clearsigned_message = pgpy.PGPMessage().from_blob(clearsigned_message_str)
+    if not self._quedex_key.verify(clearsigned_message):
+      self.on_error(Exception('Signature verification failed on message: %s' % clearsigned_message_str))
+
+    self._parse_message(clearsigned_message.message)
 
   def _parse_message(self, message_str):
     message = json.loads(message_str)
