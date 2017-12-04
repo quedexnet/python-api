@@ -21,8 +21,6 @@ Go straight to our [Simple Trading Tutorial][simple_trading.py.md].
 
 ## Important!
 
-* Prices (in offers, trades and quotes) of futures instruments are expressed in USD per BTC. Option strike prices are&nbsp;also expressed in USD per BTC, but **option premium prices (in offers, trades and quotes) are expressed in BTC per USD**. For details,
-  see [Inverse Notation][inverse-notation-docs] on our website.
 * Quedex Exchange uses an innovative [schedule of session states][faq-session-schedule]. Some
   session states employ different order matching model - namely, [Auction][faq-what-is-auction].
   Please consider this when placing orders.
@@ -77,7 +75,7 @@ In cases when information disclosure is&nbsp;not possible, you can contact us at
 In case you need to add a feature to the API, please [submit an issue][new-issue]
 containing change proposal before submitting a PR.
 
-Pull requests containing bugfixes are wery welcome!
+Pull requests containing bugfixes are very welcome!
 
 ## License
 
