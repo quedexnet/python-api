@@ -26,10 +26,9 @@ class MarketStreamListener(object):
         "type": "instrument_data",
         "data": {
           "<string id of the instrument>": {
-            "type": "instrument_data",
+            "type": "inverse_futures"/"inverse_option",
             "instrument_id": "<string id of the instrument>",
             "symbol": "<string>",
-            "type": "futures"/"option",
             "tick_size": <decimal>,
             "issue_date": <integer millis from epoch UTC>,
             "expiration_date": <integer millis from epoch UTC>,
