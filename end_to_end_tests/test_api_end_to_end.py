@@ -52,7 +52,7 @@ class TestApiEndToEnd(TestCase):
       'client_order_id': 1,
       'side': 'sell',
       'quantity': 1000,
-      'limit_price': '0.002',
+      'limit_price': '11000',
       'order_type': 'limit',
     })
     self.assertEqual(messages[1], {
@@ -64,7 +64,7 @@ class TestApiEndToEnd(TestCase):
       'client_order_id': 2,
       'side': 'sell',
       'quantity': 1000,
-      'limit_price': '0.003',
+      'limit_price': '12000',
       'order_type': 'limit',
     })
     self.assertEqual(messages[2], {
@@ -79,7 +79,7 @@ class TestApiEndToEnd(TestCase):
         'client_order_id': 3,
         'side': 'buy',
         'quantity': 123,
-        'limit_price': '100000',
+        'limit_price': '1000000',
         'order_type': 'limit',
       }]
     })
@@ -117,26 +117,26 @@ class MarketStreamServerProtocol(WebSocketServerProtocol):
     self.sendMessage(sign({
       'type': 'order_book',
       'instrument_id': '71',
-      'bids': [['0.00041667', 10]],
+      'bids': [['9000', 10]],
       'asks': [],
     }))
     self.sendMessage(sign({
       'type': 'order_book',
       'instrument_id': '71',
-      'bids': [['0.002', 10]],
-      'asks': [['0.00042016', 10]],
+      'bids': [['11000', 10]],
+      'asks': [['20000', 10]],
     }))
     self.sendMessage(sign({
       'type': 'order_book',
       'instrument_id': '72',
-      'bids': [['0.002', 10]],
-      'asks': [['0.00042016', 10]],
+      'bids': [['11000', 10]],
+      'asks': [['20000', 10]],
     }))
     self.sendMessage(sign({
       'type': 'order_book',
       'instrument_id': '71',
-      'bids': [['0.003', 10]],
-      'asks': [['0.00042016', 10]],
+      'bids': [['12000', 10]],
+      'asks': [['20000', 10]],
     }))
 
     # send messages on user stream here, to maintain the order of events
