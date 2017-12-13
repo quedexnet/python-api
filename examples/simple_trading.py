@@ -20,7 +20,7 @@ trader.decrypt_private_key('aaa')
 user_stream = UserStream(exchange, trader)
 market_stream = MarketStream(exchange)
 selected_futures_id = None
-sell_threshold = 0.001
+sell_threshold = 10000
 order_id = 0
 
 def get_order_id():
@@ -68,7 +68,8 @@ class SimpleUserListener(UserStreamListener):
           'client_order_id':  get_order_id(),
           'side': order_side,
           'quantity': open_position['quantity'],
-          'limit_price': '0.00000001' if order_side == 'sell' else '100000',
+          # pretend "market" order
+          'limit_price': '0.01' if order_side == 'sell' else '1000000',
           'order_type': 'limit',
         })
         # use batch whenever a number of orders is placed at once

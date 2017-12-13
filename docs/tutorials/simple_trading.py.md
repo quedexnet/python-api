@@ -57,9 +57,7 @@ In this step, we will define user-supplied listeners which will be later attache
 and `MarketStream` and which will receive messages that arrive on the WebSockets. For the sake of
 example, our `MarketStreamListener` will implement a dummy trading strategy which will trade the
 first futures instrument it finds (see `on_instrument_data`) and will place a sell order whenever
-the ask price is higher than 0.001 BTC per USD (see `on_order_book`; please remember that the
-contracts have USD as underlying and prices are expressed in BTC! i.e. this corresponds to buying
-when BTCUSD is lower than 1000).
+the bid price is higher than 10000 USD per BTC (see `on_order_book`).
 
 Notice that we are guaranteed to know the `selected_instrument_id` before we receive any order
 book -`instrument_data` is the first message that arrives on market stream (see documentation of
@@ -68,7 +66,7 @@ Twisted's threading model.
 
 ```python
 selected_futures_id = None
-sell_threshold = 0.001
+sell_threshold = 10000
 order_id = 0
 
 def get_order_id():
@@ -133,7 +131,8 @@ class SimpleUserListener(UserStreamListener):
           'client_order_id':  get_order_id(),
           'side': order_side,
           'quantity': open_position['quantity'],
-          'limit_price': '0.00000001' if order_side == 'sell' else '100000',
+          # pretend "market" order
+          'limit_price': '0.01' if order_side == 'sell' else '1000000',
           'order_type': 'limit',
         })
         # use batch whenever a number of orders is placed at once
