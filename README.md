@@ -21,6 +21,8 @@ Go straight to our [Simple Trading Tutorial][simple_trading.py.md].
 
 ## Important!
 
+* Next to this documentation, please read the [general documentation](https://quedex.net/doc/api) 
+  of our WebSocket API.
 * Quedex Exchange uses an innovative [schedule of session states][faq-session-schedule]. Some
   session states employ different order matching model - namely, [Auction][faq-what-is-auction].
   Please consider this when placing orders.
