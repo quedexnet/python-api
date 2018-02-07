@@ -380,7 +380,7 @@ class TestUserStream(TestCase):
     self.user_stream.on_message(self.serialize_to_trader([{
         'type': 'subscribed',
         'nonce': 5,
-        'nonce_group': 6,
+        'message_nonce_group': 6,
     }]))
     self.assertFalse(self.user_stream._initialized)
     self.assertFalse(self.listener.ready)
