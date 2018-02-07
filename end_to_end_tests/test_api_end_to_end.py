@@ -97,10 +97,12 @@ class UserStreamServerProtocol(WebSocketServerProtocol):
       user_stream_sender(sign_encrypt({
         'type': 'last_nonce',
         'last_nonce': 0,
+        'nonce_group': 5,
       }))
     elif message['type'] == 'subscribe':
       user_stream_sender(sign_encrypt({
         'type': 'subscribed',
+        'message_nonce_group': 5,
       }))
     else:
       messages.append(message)
