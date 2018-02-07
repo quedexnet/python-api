@@ -36,6 +36,7 @@ class TestUserStream(TestCase):
     self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'last_nonce',
       'last_nonce': 5,
+      'nonce_group': 5,
     }]))
     self.assertFalse(self.user_stream._initialized)
     self.assertEqual(self.user_stream._nonce, 6)
@@ -49,7 +50,7 @@ class TestUserStream(TestCase):
     self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'subscribed',
       'nonce': 5,
-      'nonce_group': 5,
+      'message_nonce_group': 5,
     }]))
     self.assertTrue(self.user_stream._initialized)
     self.assertTrue(self.listener.ready)
@@ -348,13 +349,14 @@ class TestUserStream(TestCase):
     self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'last_nonce',
       'last_nonce': 5,
+      'nonce_group': 5,
     }]))
     account_state = {'type': 'account_state', 'balance': '3.1416'}
     self.user_stream.on_message(self.serialize_to_trader([
       {
         'type': 'subscribed',
         'nonce': 5,
-        'nonce_group': 5,
+        'message_nonce_group': 5,
       },
       account_state
     ]))
@@ -363,6 +365,25 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.error, None)
     self.assertEqual(self.listener.account_state, account_state)
     self.assertEqual(self.listener.message, account_state)
+
+  def test_does_not_process_last_nonce_for_foreign_nonce_group(self):
+    self.user_stream.initialize()
+    self.user_stream.on_message(self.serialize_to_trader([{
+      'type': 'last_nonce',
+      'last_nonce': 5,
+      'nonce_group': 6,
+    }]))
+    self.assertEqual(self.user_stream._nonce, None)
+
+  def test_is_not_initialized_after_receiving_subscribed_for_foreign_nonce_grup(self):
+    self.user_stream.initialize()
+    self.user_stream.on_message(self.serialize_to_trader([{
+        'type': 'subscribed',
+        'nonce': 5,
+        'nonce_group': 6,
+    }]))
+    self.assertFalse(self.user_stream._initialized)
+    self.assertFalse(self.listener.ready)
 
   def serialize_to_trader(self, entity):
     return json.dumps({
@@ -378,11 +399,12 @@ class TestUserStream(TestCase):
     self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'last_nonce',
       'last_nonce': 5,
+      'nonce_group': 5,
     }]))
     self.user_stream.on_message(self.serialize_to_trader([{
       'type': 'subscribed',
       'nonce': 5,
-      'nonce_group': 5,
+      'message_nonce_group': 5,
     }]))
 
 

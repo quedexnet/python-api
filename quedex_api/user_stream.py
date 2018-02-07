@@ -346,11 +346,11 @@ class UserStream(object):
 
   def process_data(self, message_wrapper):
     for entity in self._decrypt(message_wrapper['data']):
-      if entity['type'] == 'last_nonce':
+      if entity['type'] == 'last_nonce' and entity['nonce_group'] == self._nonce_group:
         self._nonce = entity['last_nonce']
         self._encrypt_send(self._set_nonce_account_id({'type': 'subscribe'}))
         return
-      elif entity['type'] == 'subscribed':
+      elif entity['type'] == 'subscribed' and entity['message_nonce_group'] == self._nonce_group:
         self._initialized = True
         self._call_listeners('on_ready')
         continue
