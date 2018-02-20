@@ -104,6 +104,22 @@ class UserStreamListener(object):
     """
     pass
 
+  def on_all_orders_cancelled(self, all_orders_cancelled):
+    """
+    :param all_orders_cancelled: dummy parameter, reserved for future extensions
+    """
+    pass
+
+
+  def on_cancel_all_orders_failed(self, cancel_all_orders_failed):
+    """
+    :param cancel_all_orders_failed: a dict of the following format:
+      {
+        "cause": "session_not_active",
+      }
+    """
+    pass
+
   def on_order_modified(self, order_modified):
     """
     :param order_modified: a dict of the following format:
@@ -234,6 +250,16 @@ class UserStream(object):
     else:
       self._encrypt_send(cancel_order_command)
 
+  def cancel_all_orders(self):
+    if not self._initialized:
+      raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
+    cancel_all_orders_command = {'type': 'cancel_all_orders'}
+    self._set_nonce_account_id(cancel_all_orders_command)
+    if self._batching:
+      self._batch.append(cancel_all_orders_command)
+    else:
+      self._encrypt_send(cancel_all_orders_command)
+
   def modify_order(self, modify_order_command):
     """
     :param modify_order_command: a dict of the following format:
@@ -282,6 +308,8 @@ class UserStream(object):
         check_cancel_order(command)
       elif type == 'modify_order':
         check_modify_order(command)
+      elif type == 'cancel_all_orders':
+        check_cancel_all_orders(command)
       else:
         raise ValueError('Unsupported command type: ' + type)
       self._set_nonce_account_id(command)
@@ -415,6 +443,8 @@ def check_modify_order(modify_order):
   if 'new_limit_price' not in modify_order and 'new_quantity' not in modify_order:
     raise ValueError('modify_order should have new_limit_price or new_quantity')
 
+def check_cancel_all_orders(cancel_all_orders):
+  pass
 
 def check_positive_decimal(_dict, field_name):
   number = _dict[field_name]

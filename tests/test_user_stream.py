@@ -96,6 +96,25 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.order_cancelled, order_cancelled)
     self.assertEqual(self.listener.message, order_cancelled)
 
+  def test_receiving_all_orders_cancelled(self):
+    all_orders_cancelled = {'type': 'all_orders_cancelled'}
+    self.user_stream.on_message(self.serialize_to_trader([all_orders_cancelled]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.all_orders_cancelled, all_orders_cancelled)
+    self.assertEqual(self.listener.message, all_orders_cancelled)
+
+  def test_receiving_cancel_all_orders_failed(self):
+    cancel_all_orders_failed = {
+      'type': 'cancel_all_orders_failed',
+      'cause': 'session_not_active'
+    }
+    self.user_stream.on_message(self.serialize_to_trader([cancel_all_orders_failed]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.cancel_all_orders_failed, cancel_all_orders_failed)
+    self.assertEqual(self.listener.message, cancel_all_orders_failed)
+
   def test_receiving_order_forcefully_cancelled(self):
     order_forcefully_cancelled = {
       'type': 'order_forcefully_cancelled',
@@ -263,6 +282,18 @@ class TestUserStream(TestCase):
       'nonce_group': 5,
     })
 
+  def test_cancelling_all_orders(self):
+    self.initialize()
+
+    self.user_stream.cancel_all_orders()
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'cancel_all_orders',
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+    })
+
   def test_modifying_order(self):
     self.initialize()
 
@@ -282,6 +313,9 @@ class TestUserStream(TestCase):
 
     self.user_stream.batch([
       {
+        'type': 'cancel_all_orders',
+      },
+      {
         'type': 'modify_order',
         'new_limit_price': '9.87',
         'client_order_id': 23,
@@ -297,18 +331,24 @@ class TestUserStream(TestCase):
       'account_id': '123456789',
       'batch': [
         {
+          'type': 'cancel_all_orders',
+          'account_id': '123456789',
+          'nonce': 7,
+          'nonce_group': 5,
+        },
+        {
           'type': 'modify_order',
           'new_limit_price': '9.87',
           'client_order_id': 23,
           'account_id': '123456789',
-          'nonce': 7,
+          'nonce': 8,
           'nonce_group': 5,
         },
         {
           'type': 'cancel_order',
           'account_id': '123456789',
           'client_order_id': 22,
-          'nonce': 8,
+          'nonce': 9,
           'nonce_group': 5,
         }
       ]
@@ -318,6 +358,7 @@ class TestUserStream(TestCase):
     self.initialize()
 
     self.user_stream.start_batch()
+    self.user_stream.cancel_all_orders()
     self.user_stream.modify_order({'new_limit_price': '9.87', 'client_order_id': 23,})
     self.user_stream.cancel_order({'client_order_id': 22})
     self.user_stream.send_batch()
@@ -327,18 +368,24 @@ class TestUserStream(TestCase):
       'account_id': '123456789',
       'batch': [
         {
+          'type': 'cancel_all_orders',
+          'account_id': '123456789',
+          'nonce': 7,
+          'nonce_group': 5,
+        },
+        {
           'type': 'modify_order',
           'new_limit_price': '9.87',
           'client_order_id': 23,
           'account_id': '123456789',
-          'nonce': 7,
+          'nonce': 8,
           'nonce_group': 5,
         },
         {
           'type': 'cancel_order',
           'account_id': '123456789',
           'client_order_id': 22,
-          'nonce': 8,
+          'nonce': 9,
           'nonce_group': 5,
         }
       ]
@@ -421,6 +468,8 @@ class TestListener(UserStreamListener):
     self.disconnect_message = None
     self.order_placed = None
     self.order_cancelled = None
+    self.all_orders_cancelled = None
+    self.cancel_all_orders_failed = None
     self.order_forcefully_cancelled = None
     self.order_filled = None
     self.ready = False
@@ -437,6 +486,12 @@ class TestListener(UserStreamListener):
 
   def on_order_cancel_failed(self, order_cancel_failed):
     self.order_cancel_failed = order_cancel_failed
+
+  def on_all_orders_cancelled(self, all_orders_cancelled):
+    self.all_orders_cancelled = all_orders_cancelled
+
+  def on_cancel_all_orders_failed(self, cancel_all_orders_failed):
+    self.cancel_all_orders_failed = cancel_all_orders_failed
 
   def on_account_state(self, account_state):
     self.account_state = account_state
