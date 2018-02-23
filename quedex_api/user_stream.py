@@ -223,8 +223,7 @@ class UserStream(object):
         "quantity": <integer>,
       }
     """
-    if not self._initialized:
-      raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
+    self._check_if_initialized()
     place_order_command['type'] = 'place_order'
     check_place_order(place_order_command)
     self._set_nonce_account_id(place_order_command)
@@ -240,8 +239,7 @@ class UserStream(object):
         "client_order_id": <positive integer id of the order to cancel>,
       }
     """
-    if not self._initialized:
-      raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
+    self._check_if_initialized()
     check_cancel_order(cancel_order_command)
     cancel_order_command['type'] = 'cancel_order'
     self._set_nonce_account_id(cancel_order_command)
@@ -251,8 +249,7 @@ class UserStream(object):
       self._encrypt_send(cancel_order_command)
 
   def cancel_all_orders(self):
-    if not self._initialized:
-      raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
+    self._check_if_initialized()
     cancel_all_orders_command = {'type': 'cancel_all_orders'}
     self._set_nonce_account_id(cancel_all_orders_command)
     if self._batching:
@@ -269,8 +266,7 @@ class UserStream(object):
         "new_quantity": <integer>,
       }
     """
-    if not self._initialized:
-      raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
+    self._check_if_initialized()
     check_modify_order(modify_order_command)
     modify_order_command['type'] = 'modify_order'
     self._set_nonce_account_id(modify_order_command)
@@ -298,8 +294,7 @@ class UserStream(object):
       ...
      ]
     """
-    if not self._initialized:
-      raise Exception('UserStream not initialized, wait until UserStreamListener.on_read is called')
+    self._check_if_initialized()
     for command in order_commands:
       type = command['type']
       if type == 'place_order':
@@ -416,6 +411,9 @@ class UserStream(object):
       if hasattr(listener, method_name):
         getattr(listener, method_name)(*args, **kwargs)
 
+  def _check_if_initialized(self):
+    if not self._initialized:
+      raise Exception('UserStream not initialized, wait until UserStreamListener.on_ready is called.')
 
 def check_place_order(place_order):
   check_positive_int(place_order, 'client_order_id')
