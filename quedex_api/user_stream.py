@@ -277,7 +277,7 @@ class UserStream(object):
 
   def batch(self, order_commands):
     """
-    :param order_commands: a list with the number of commands where the following are possible:
+    :param order_commands: a list with a number of commands where the following are possible:
      [
       {
         "type": "place_order",
@@ -290,6 +290,9 @@ class UserStream(object):
       {
         "type": "modify_order",
         // for the rest of the fields see modify_order method
+      },
+      {
+        "type": "cancel_all_orders",
       },
       ...
      ]
