@@ -115,7 +115,7 @@ class MarketStreamServerProtocol(WebSocketServerProtocol):
   def onOpen(self):
     self.sendMessage(sign({
       'type': 'instrument_data',
-      'data': {'71': {'type': 'futures', 'instrument_id': '71'}},
+      'data': {'71': {'type': 'inverse_futures', 'instrument_id': '71'}},
     }))
     self.sendMessage(sign({
       'type': 'order_book',

@@ -31,7 +31,7 @@ def get_order_id():
 class SimpleMarketListener(MarketStreamListener):
   def on_instrument_data(self, instrument_data):
     global selected_futures_id
-    futures = [instrument for instrument in instrument_data['data'].values() if instrument['type'] == 'futures'][0]
+    futures = [instrument for instrument in instrument_data['data'].values() if instrument['type'] == 'inverse_futures'][0]
     selected_futures_id = futures['instrument_id']
 
   def on_order_book(self, order_book):
