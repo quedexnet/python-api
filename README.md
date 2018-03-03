@@ -18,6 +18,7 @@ Go straight to our [Simple Trading Tutorial][simple_trading.py.md].
  * [Simple Trading Tutorial][simple_trading.py.md] is written in literate programming style
    and translates to [simple_trading.py][simple_trading.py] script which is a&nbsp;ready-to-run
    example of using the API. The same file is also used in API's end-to-end test.
+ * The API is fully compatible with Python 2 and 3.
 
 ## Important!
 
