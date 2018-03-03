@@ -96,12 +96,13 @@ class TestMarketStream(TestCase):
   def test_receives_error_on_data_parsing_error(self):
     self.market_stream.on_message(market_stream_fixtures.corrupt_data_str)
 
-    self.assertEqual(self.listener.error.message, 'No JSON object could be decoded')
+    # cannot test message equality because python 2 and 3 give different message
+    self.assertNotEqual(self.listener.error, None)
 
   def test_receives_error_from_outside(self):
     self.market_stream.on_error(Exception('bomba'))
 
-    self.assertEqual(self.listener.error.message, 'bomba')
+    self.assertEqual(str(self.listener.error), 'bomba')
 
   def test_maintenance_error_code_is_ignored(self):
     self.market_stream.on_message(market_stream_fixtures.error_maintenance_data_str)
@@ -111,7 +112,7 @@ class TestMarketStream(TestCase):
   def test_receives_error_on_non_maintenance_error_code(self):
     self.market_stream.on_message(market_stream_fixtures.error_data_str)
 
-    self.assertEqual(self.listener.error.message, 'WebSocket error: ERROR')
+    self.assertEqual(str(self.listener.error), 'WebSocket error: ERROR')
 
   def test_does_not_call_removed_listener(self):
     self.market_stream.remove_listener(self.listener)
