@@ -1,10 +1,4 @@
 #!/bin/bash
 
-if [ ! -d "venv" ]; then
-  virtualenv --no-site-packages venv
-fi
-
-. venv/bin/activate
-pip install -r requirements
-
-python -m unittest discover tests
+./run_tests_python2.sh
+./run_tests_python3.sh
