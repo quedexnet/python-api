@@ -92,7 +92,8 @@ class UserStreamServerProtocol(WebSocketServerProtocol):
     user_stream_sender = self.sendMessage
 
   def onMessage(self, payload, is_binary):
-    message = decrypt_verify(payload)
+    # explicit decode for Python 3 compatibility
+    message = decrypt_verify(payload.decode('utf8'))
     if message['type'] == 'get_last_nonce':
       user_stream_sender(sign_encrypt({
         'type': 'last_nonce',
@@ -161,13 +162,15 @@ class MarketStreamServerProtocol(WebSocketServerProtocol):
 def sign(object):
   message = pgpy.PGPMessage.new(json.dumps(object))
   message |= exchange_key.sign(message)
-  return json.dumps({'type': 'data', 'data': str(message)})
+  # explicit encode for Python 3 compatibility
+  return json.dumps({'type': 'data', 'data': str(message)}).encode('utf8')
 
 
 def sign_encrypt(object):
   message = pgpy.PGPMessage.new(json.dumps([object]))
   message |= exchange_key.sign(message)
-  return json.dumps({'type': 'data', 'data': str(trader_key.encrypt(message))})
+  # explicit encode for Python 3 compatibility
+  return json.dumps({'type': 'data', 'data': str(trader_key.encrypt(message))}).encode('utf8')
 
 
 def decrypt_verify(message):

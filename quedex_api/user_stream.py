@@ -400,7 +400,8 @@ class UserStream(object):
   def _encrypt_send(self, entity):
     message = pgpy.PGPMessage.new(json.dumps(entity))
     message |= self._trader.private_key.sign(message)
-    self.send_message(str(self._exchange.public_key.encrypt(message)))
+    # explicit encode for Python 3 compatibility
+    self.send_message(str(self._exchange.public_key.encrypt(message)).encode('utf8'))
 
   def _decrypt(self, encrypted_str):
     encrypted = pgpy.PGPMessage().from_blob(encrypted_str)

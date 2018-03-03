@@ -10,7 +10,8 @@ class UserStreamClientProtocol(WebSocketClientProtocol):
     self.factory.user_stream.initialize()
 
   def onMessage(self, payload, isbinary):
-    self.factory.user_stream.on_message(payload)
+    # explicit decode for Python 3 compatibility
+    self.factory.user_stream.on_message(payload.decode('utf8'))
 
   def onClose(self, wasclean, code, reason):
     if not wasclean:
