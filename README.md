@@ -1,5 +1,7 @@
 # Quedex Official Python API
 
+<a href="https://travis-ci.org/quedexnet/python-api/"><img src="https://travis-ci.org/quedexnet/python-api.svg?branch=master" align=right></a>
+
 > The best way to communicate with [Quedex Bitcoin Derivatives Exchange](https://quedex.net)
 using Python.
 
