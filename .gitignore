@@ -1,4 +1,5 @@
 node_modules
 .idea
 venv
+venv3
 *.pyc
