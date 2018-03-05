@@ -9,4 +9,3 @@ pip install -r requirements
 
 python -m unittest discover tests
 
-deactivate
