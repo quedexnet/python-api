@@ -237,6 +237,43 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.messages[0], filled1)
     self.assertEqual(self.listener.messages[1], filled2)
 
+  def test_receiving_internal_transfer_received(self):
+    internal_transfer_received = {
+      'type': 'internal_transfer_received',
+      'source_account_id': 1,
+      'amount': '1.2',
+    }
+    self.user_stream.on_message(self.serialize_to_trader([internal_transfer_received]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.internal_transfer_received, internal_transfer_received)
+    self.assertEqual(self.listener.message, internal_transfer_received)
+
+  def test_internal_transfer_executed(self):
+    internal_transfer_executed = {
+      'type': 'internal_transfer_executed',
+      'destination_account_id': 1,
+      'amount': '1.2',
+    }
+    self.user_stream.on_message(self.serialize_to_trader([internal_transfer_executed]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.internal_transfer_executed, internal_transfer_executed)
+    self.assertEqual(self.listener.message, internal_transfer_executed)
+
+  def test_internal_transfer_rejected(self):
+    internal_transfer_rejected = {
+      'type': 'internal_transfer_rejected',
+      'destination_account_id': 1,
+      'amount': '1.2',
+      'cause': 'forbidden',
+    }
+    self.user_stream.on_message(self.serialize_to_trader([internal_transfer_rejected]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.internal_transfer_rejected, internal_transfer_rejected)
+    self.assertEqual(self.listener.message, internal_transfer_rejected)
+
   def test_receives_error_on_data_parsing_error(self):
     self.user_stream.on_message('not json')
 
@@ -479,7 +516,7 @@ class TestUserStream(TestCase):
       exception_caught = True
 
     self.assertTrue(exception_caught)
-    
+
 
   def test_modifying_orders_without_new_quantity_nor_new_price(self):
     self.initialize()
@@ -494,7 +531,7 @@ class TestUserStream(TestCase):
 
   def test_modifying_orders_with_invalid_post_only(self):
     self.initialize()
-    
+
     exception_caught = False
 
     try:
@@ -1217,6 +1254,20 @@ class TestUserStream(TestCase):
       'nonce_group': 5,
     })
 
+  def test_executing_internal_transfer(self):
+    self.initialize()
+
+    self.user_stream.execute_internal_transfer({'destination_account_id': 1234, 'amount': '0.001'})
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'internal_transfer',
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+      'destination_account_id': 1234,
+      'amount': '0.001'
+    })
+
   def test_receives_welcome_pack_with_with_account_state(self):
     self.user_stream.initialize()
     self.user_stream.on_message(self.serialize_to_trader([{
@@ -1248,7 +1299,7 @@ class TestUserStream(TestCase):
     }]))
     self.assertEqual(self.user_stream._nonce, None)
 
-  def test_is_not_initialized_after_receiving_subscribed_for_foreign_nonce_grup(self):
+  def test_is_not_initialized_after_receiving_subscribed_for_foreign_nonce_group(self):
     self.user_stream.initialize()
     self.user_stream.on_message(self.serialize_to_trader([{
         'type': 'subscribed',
@@ -1305,6 +1356,9 @@ class TestListener(UserStreamListener):
     self.timer_failed = None
     self.timer_cancelled = None
     self.timer_failed = None
+    self.internal_transfer_received = None
+    self.internal_transfer_executed = None
+    self.internal_transfer_rejected = None
     self.ready = False
 
   @property
@@ -1382,6 +1436,15 @@ class TestListener(UserStreamListener):
 
   def on_timer_cancel_failed(self, timer_cancel_failed):
     self.timer_failed = timer_cancel_failed
+
+  def on_internal_transfer_received(self, internal_transfer_received):
+    self.internal_transfer_received = internal_transfer_received
+
+  def on_internal_transfer_executed(self, internal_transfer_executed):
+    self.internal_transfer_executed = internal_transfer_executed
+
+  def on_internal_transfer_rejected(self, internal_transfer_rejected):
+    self.internal_transfer_rejected = internal_transfer_rejected
 
 def sign_encrypt(entity, private_key, public_key):
   message = pgpy.PGPMessage.new(json.dumps(entity))
