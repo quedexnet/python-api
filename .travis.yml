@@ -13,4 +13,5 @@ script:
   - gulp
   - 'test -z "`git status -s | tee /dev/stderr`" || (echo "Encountered untracked changes after generating e2e test. Did you forget run gulp?" && false)'
   - ./e2e_test.sh
+  - ./test_as_dependency.sh
 
