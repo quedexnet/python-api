@@ -221,6 +221,9 @@ class UserStream(object):
         "limit_price": "<decimal as string>",
         "side": "buy"/"sell",
         "quantity": <integer>,
+        "post_only": <bool, optional field, True means order placement will faiil
+                      if it would cause immediate fill, absence has the same
+                      effect as False>
       }
     """
     self._check_if_initialized()
@@ -438,6 +441,8 @@ def check_place_order(place_order):
   order_type = place_order['order_type']
   if order_type.lower() != 'limit':
     raise ValueError('The only supported order_type is limit currently')
+  if 'post_only' in place_order:
+    check_boolean(place_order, 'post_only')
 
 
 def check_cancel_order(cancel_order):

@@ -270,6 +270,56 @@ class TestUserStream(TestCase):
       'limit_price': '4.5',
     })
 
+  def test_placing_order_with_post_only(self):
+    self.initialize()
+
+    self.user_stream.place_order({
+      'price': '9.87',
+      'client_order_id': 15,
+      'instrument_id': '76',
+      'quantity': 6,
+      'side': 'buy',
+      'order_type': 'limit',
+      'limit_price': '4.5',
+      'post_only': True,
+    })
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'place_order',
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+      'price': '9.87',
+      'client_order_id': 15,
+      'instrument_id': '76',
+      'quantity': 6,
+      'side': 'buy',
+      'order_type': 'limit',
+      'limit_price': '4.5',
+      'post_only': True,
+    })
+
+  def test_placing_order_with_invalid_post_only(self):
+    self.initialize()
+
+    exception_caught = False
+
+    try:
+      self.user_stream.place_order({
+        'price': '9.87',
+        'client_order_id': 15,
+        'instrument_id': '76',
+        'quantity': 6,
+        'side': 'buy',
+        'order_type': 'limit',
+        'limit_price': '4.5',
+        'post_only': 0,
+      })
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
   def test_cancelling_order(self):
     self.initialize()
 
