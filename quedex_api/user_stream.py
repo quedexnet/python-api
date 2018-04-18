@@ -259,11 +259,19 @@ class UserStream(object):
 
   def modify_order(self, modify_order_command):
     """
-    :param modify_order_command: a dict of the following format:
+    :param modify_order_command: a dict with following contents:
+    Mandatory key "client_order_id":
       {
-        "client_order_id": <positive integer id of the order to modify>,
-        "new_limit_price": "<decimal as string>",
+        "client_order_id": <positive integer id of the order to modify>
+      }
+    At lest one of keys: "new_price", "new_quantity":
+      {
+        "new_price": "<decimal as string>",
         "new_quantity": <integer>,
+      }
+    Optional key "post_only" (absence has the same effect as False):
+      {
+        "post_only": <bool, True means modification will fail if it would cause immediate fill>
       }
     """
     self._check_if_initialized()
@@ -438,12 +446,14 @@ def check_cancel_order(cancel_order):
 
 def check_modify_order(modify_order):
   check_positive_int(modify_order, 'client_order_id')
-  if 'new_limit_price' in modify_order:
-    check_positive_decimal(modify_order, 'new_limit_price')
+  if 'new_price' in modify_order:
+    check_positive_decimal(modify_order, 'new_price')
   if 'new_quantity' in modify_order:
     check_positive_int(modify_order, 'new_quantity')
-  if 'new_limit_price' not in modify_order and 'new_quantity' not in modify_order:
-    raise ValueError('modify_order should have new_limit_price or new_quantity')
+  if 'new_price' not in modify_order and 'new_quantity' not in modify_order:
+    raise ValueError('modify_order should have new_price or new_quantity')
+  if 'post_only' in modify_order:
+    check_boolean(modify_order, 'post_only')
 
 def check_cancel_all_orders(cancel_all_orders):
   pass
@@ -458,3 +468,8 @@ def check_positive_int(_dict, field_name):
   _id = _dict[field_name]
   if not int(_id) > 0:
     raise ValueError('%s=%s should be greater than 0' % (field_name, _id))
+
+def check_boolean(_dict, field_name):
+  _id = _dict[field_name]
+  if type(_id) is not bool:
+    raise TypeError('%s=%s should be bool' % (field_name, _id))
