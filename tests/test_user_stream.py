@@ -484,6 +484,18 @@ class TestUserStream(TestCase):
       ]
     })
 
+  def test_empty_batch(self):
+    self.initialize()
+
+    exception_caught = False
+
+    try:
+      self.user_stream.batch([])
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
   def test_start_send_batch(self):
     self.initialize()
 
@@ -520,6 +532,19 @@ class TestUserStream(TestCase):
         }
       ]
     })
+
+  def test_start_send_empty_batch(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_batch()
+    try:
+      self.user_stream.send_batch()
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
 
   def test_receives_welcome_pack_with_with_account_state(self):
     self.user_stream.initialize()

@@ -309,6 +309,8 @@ class UserStream(object):
      ]
     """
     self._check_if_initialized()
+    if len(order_commands) == 0:
+      raise ValueError("Empty batch")
     for command in order_commands:
       type = command['type']
       if type == 'place_order':
@@ -339,6 +341,8 @@ class UserStream(object):
     """
     if not self._batching:
       raise Exception('send_batch called without calling start_batch first')
+    if len(self._batch) == 0:
+      raise ValueError("Empty batch")
     self._send_batch_no_checks(self._batch)
     self._batch = None
     self._batching = False
