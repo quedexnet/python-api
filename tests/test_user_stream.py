@@ -295,19 +295,98 @@ class TestUserStream(TestCase):
       'nonce_group': 5,
     })
 
-  def test_modifying_order(self):
+  def test_modifying_order_with_new_price(self):
     self.initialize()
 
-    self.user_stream.modify_order({'client_order_id': 15, 'new_limit_price': '0.0001'})
+    self.user_stream.modify_order({'client_order_id': 15, 'new_price': '0.0001'})
 
     self.assertEqual(self.decrypt_from_trader(self.sent_message), {
       'type': 'modify_order',
       'account_id': '123456789',
       'client_order_id': 15,
-      'new_limit_price': '0.0001',
+      'new_price': '0.0001',
       'nonce': 7,
       'nonce_group': 5,
     })
+
+  def test_modifying_order_with_new_quantity(self):
+    self.initialize()
+
+    self.user_stream.modify_order({'client_order_id': 15, 'new_quantity': 1000})
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'modify_order',
+      'account_id': '123456789',
+      'client_order_id': 15,
+      'new_quantity': 1000,
+      'nonce': 7,
+      'nonce_group': 5,
+    })
+
+  def test_modifying_order_with_new_quantity_and_new_price(self):
+    self.initialize()
+
+    self.user_stream.modify_order({'client_order_id': 15, 'new_price': '0.0001', 'new_quantity': 1000})
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'modify_order',
+      'account_id': '123456789',
+      'client_order_id': 15,
+      'new_quantity': 1000,
+      'new_price': '0.0001',
+      'nonce': 7,
+      'nonce_group': 5,
+    })
+
+  def test_modifying_order_with_post_only(self):
+    self.initialize()
+
+    self.user_stream.modify_order({'client_order_id': 789, 'new_price': '1001.1', 'post_only': True})
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'modify_order',
+      'account_id': '123456789',
+      'client_order_id': 789,
+      'new_price': '1001.1',
+      'post_only': True,
+      'nonce': 7,
+      'nonce_group': 5
+    })
+
+  def test_modifying_orders_without_order_id(self):
+    self.initialize()
+
+    exception_caught = False
+    try:
+      self.user_stream.modify_order({'new_price': '1001.1'})
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+    
+
+  def test_modifying_orders_without_new_quantity_nor_new_price(self):
+    self.initialize()
+
+    exception_caught = False
+    try:
+      self.user_stream.modify_order({'client_order_id': 789})
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_modifying_orders_with_invalid_post_only(self):
+    self.initialize()
+    
+    exception_caught = False
+
+    try:
+      self.user_stream.modify_order({'client_order_id': 789, 'new_price': '1001.1', 'post_only': 0})
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
 
   def test_batch(self):
     self.initialize()
@@ -318,7 +397,7 @@ class TestUserStream(TestCase):
       },
       {
         'type': 'modify_order',
-        'new_limit_price': '9.87',
+        'new_price': '9.87',
         'client_order_id': 23,
       },
       {
@@ -339,7 +418,7 @@ class TestUserStream(TestCase):
         },
         {
           'type': 'modify_order',
-          'new_limit_price': '9.87',
+          'new_price': '9.87',
           'client_order_id': 23,
           'account_id': '123456789',
           'nonce': 8,
@@ -360,7 +439,7 @@ class TestUserStream(TestCase):
 
     self.user_stream.start_batch()
     self.user_stream.cancel_all_orders()
-    self.user_stream.modify_order({'new_limit_price': '9.87', 'client_order_id': 23,})
+    self.user_stream.modify_order({'new_price': '9.87', 'client_order_id': 23,})
     self.user_stream.cancel_order({'client_order_id': 22})
     self.user_stream.send_batch()
 
@@ -376,7 +455,7 @@ class TestUserStream(TestCase):
         },
         {
           'type': 'modify_order',
-          'new_limit_price': '9.87',
+          'new_price': '9.87',
           'client_order_id': 23,
           'account_id': '123456789',
           'nonce': 8,
