@@ -221,7 +221,7 @@ class UserStream(object):
         "limit_price": "<decimal as string>",
         "side": "buy"/"sell",
         "quantity": <integer>,
-        "post_only": <bool, optional field, True means order placement will faiil
+        "post_only": <bool, optional field, True means order placement will fail
                       if it would cause immediate fill, absence has the same
                       effect as False>
       }
