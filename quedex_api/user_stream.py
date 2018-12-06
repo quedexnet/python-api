@@ -2,6 +2,7 @@ import json
 
 import pgpy
 
+from enum import Enum
 
 class UserStreamListener(object):
   def on_ready(self):
@@ -150,6 +151,43 @@ class UserStreamListener(object):
     """
     pass
 
+  def on_time_triggered_batch_added(self, time_triggered_batch_added):
+    """
+    :param time_triggered_batch_added: a dict of the following format:
+      {
+        "timer_id": "<string id>",
+      }
+    """
+    pass
+
+  def on_time_triggered_batch_rejected(self, time_triggered_batch_rejected):
+    """
+    :param time_triggered_batch_rejected: a dict of the following format:
+      {
+        "timer_id": "<string id>",
+        "cause": "too_many_active_timers"/"timer_already_expired"/"timer_already_exists",
+      }
+    """
+    pass
+
+  def on_time_triggered_batch_expired(self, time_triggered_batch_expired):
+    """
+    :param time_triggered_batch_expired: a dict of the following format:
+      {
+        "timer_id": "<string id>",
+      }
+    """
+    pass
+
+  def on_time_triggered_batch_triggered(self, time_triggered_batch_triggered):
+    """
+    :param time_triggered_batch_triggered: a dict of the following format:
+      {
+        "timer_id": "<string id>",
+      }
+    """
+    pass
+
   def on_error(self, error):
     """
     Called when an error with market stream occurs (data parsing, signature verification, webosocket
@@ -185,6 +223,18 @@ class UserStream(object):
   class - see their comments for the format of the data.
   """
 
+  class BatchMode(Enum):
+    STANDARD = 1
+    TIME_TRIGGERED_CREATE = 2
+    TIME_TRIGGERED_UPDATE = 3
+
+  type_listener  = {
+    'timer_added': 'time_triggered_batch_added',
+    'timer_rejected': 'time_triggered_batch_rejected',
+    'timer_expired': 'time_triggered_batch_expired',
+    'timer_triggered': 'time_triggered_batch_triggered'
+  }
+
   def __init__(self, exchange, trader, nonce_group=5):
     """
     :param nonce_group: value between 0 and 9, has to be different for every WebSocket connection
@@ -202,8 +252,9 @@ class UserStream(object):
     self._nonce_group = nonce_group
     self._nonce = None
     self._initialized = False
-    self._batching = False
     self._batch = None
+    self._batch_mode = None
+    self._time_triggered_batch_command = None
 
   def add_listener(self, listener):
     self._listeners.append(listener)
@@ -230,7 +281,7 @@ class UserStream(object):
     place_order_command['type'] = 'place_order'
     check_place_order(place_order_command)
     self._set_nonce_account_id(place_order_command)
-    if self._batching:
+    if self._batch_mode:
       self._batch.append(place_order_command)
     else:
       self._encrypt_send(place_order_command)
@@ -246,7 +297,7 @@ class UserStream(object):
     check_cancel_order(cancel_order_command)
     cancel_order_command['type'] = 'cancel_order'
     self._set_nonce_account_id(cancel_order_command)
-    if self._batching:
+    if self._batch_mode:
       self._batch.append(cancel_order_command)
     else:
       self._encrypt_send(cancel_order_command)
@@ -255,7 +306,7 @@ class UserStream(object):
     self._check_if_initialized()
     cancel_all_orders_command = {'type': 'cancel_all_orders'}
     self._set_nonce_account_id(cancel_all_orders_command)
-    if self._batching:
+    if self._batch_mode:
       self._batch.append(cancel_all_orders_command)
     else:
       self._encrypt_send(cancel_all_orders_command)
@@ -281,7 +332,7 @@ class UserStream(object):
     check_modify_order(modify_order_command)
     modify_order_command['type'] = 'modify_order'
     self._set_nonce_account_id(modify_order_command)
-    if self._batching:
+    if self._batch_mode:
       self._batch.append(modify_order_command)
     else:
       self._encrypt_send(modify_order_command)
@@ -308,6 +359,130 @@ class UserStream(object):
       ...
      ]
     """
+    self._verify_batch_commands_and_set_nonces_and_account_id(order_commands)
+    self._send_batch_no_checks(order_commands)
+
+  def start_batch(self):
+    """
+    After this method is called all calls to place_order, cancel_order, modify_order result in
+    caching of the commands which are then sent once send_batch is called.
+    """
+    if self._batch_mode == self.BatchMode.TIME_TRIGGERED_CREATE:
+      raise Exception('Cannot start another batch. Currently creating time triggered batch')
+    if self._batch_mode == self.BatchMode.TIME_TRIGGERED_UPDATE:
+      raise Exception('Cannot start another batch. Currently updating time triggered batch')
+    self._batch = []
+    self._batch_mode = self.BatchMode.STANDARD
+
+  def send_batch(self):
+    """
+    Sends batch created from calling place_order, cancel_order, modify_order after calling
+    start_batch.
+    """
+    if not (self._batch_mode == self.BatchMode.STANDARD):
+      raise Exception('send_batch called without calling start_batch first')
+    if len(self._batch) == 0:
+      raise ValueError("Empty batch")
+    self._send_batch_no_checks(self._batch)
+    self._batch = None
+    self._batch_mode = None
+
+  def time_triggered_batch(self, timer_id, execution_start_timestamp, execution_expiration_timestamp, order_commands):
+    """
+    Creates timer in exchange engine with a batch of order commands. These commands will be automatically
+    placed, between executionStartTimestamp and executionExpirationTimestamp.
+
+    :param timer_id: a user defined timer identifier, can be used to cancel or update batch
+    :param execution_start_timestamp: the defined batch will not be executed before this timestamp
+    :param execution_expiration_timestamp: the defined batch will not be executed after this timestamp
+    :param order_commands: a list with a number of commands where the following are possible:
+     [
+      {
+        "type": "place_order",
+        // for the rest of the fields see place_order method
+      },
+      {
+        "type": "cancel_order",
+        // for the rest of the fields see cancel_order method
+      },
+      {
+        "type": "modify_order",
+        // for the rest of the fields see modify_order method
+      },
+      {
+        "type": "cancel_all_orders",
+      },
+      ...
+     ]
+    """
+    command = {
+      'type': 'add_timer',
+      'timer_id': timer_id,
+      'execution_start_timestamp': execution_start_timestamp,
+      'execution_expiration_timestamp': execution_expiration_timestamp
+    }
+    self._set_nonce_account_id(command)
+    self._verify_batch_commands_and_set_nonces_and_account_id(order_commands)
+
+    self._send_time_triggered_batch_no_checks(command, order_commands)
+
+  def start_time_triggered_batch(self, timer_id, execution_start_timestamp, execution_expiration_timestamp):
+    """
+    After this method is called all calls to place_order, cancel_order, modify_order result in
+    caching of the commands which are then sent once send_time_triggered_batch is called.
+
+    :param timer_id: a user defined timer identifier, can be used to cancel or update batch
+    :param execution_start_timestamp: the defined batch will not be executed before this timestamp
+    :param execution_expiration_timestamp: the defined batch will not be executed after this timestamp
+    """
+    if self._batch_mode == self.BatchMode.STANDARD:
+      raise Exception('Cannot start another batch. Currently creating batch')
+    if self._batch_mode == self.BatchMode.TIME_TRIGGERED_UPDATE:
+      raise Exception('Cannot start another batch. Currently updating time triggered batch')
+    self._batch = []
+    self._batch_mode = self.BatchMode.TIME_TRIGGERED_CREATE
+    command = {
+      'type': 'add_timer',
+      'timer_id': timer_id,
+      'execution_start_timestamp': execution_start_timestamp,
+      'execution_expiration_timestamp': execution_expiration_timestamp
+    }
+    self._set_nonce_account_id(command)
+    self._time_triggered_batch_command = command
+
+  def send_time_triggered_batch(self):
+    """
+    Sends time triggered batch created from calling place_order, cancel_order, modify_order after calling
+    start_time_triggered_batch, which creates timer in exchange engine with a batch of order commands.
+    """
+    if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_CREATE):
+      raise Exception('Send_batch called without calling start_time_triggered_batch first')
+    if len(self._batch) == 0:
+      raise ValueError("Empty batch")
+    self._send_time_triggered_batch_no_checks(self._time_triggered_batch_command, self._batch)
+    self._batch = None
+    self._batch_mode = None
+    self._time_triggered_batch_command = None
+
+  def _send_batch_no_checks(self, order_commands):
+    self._encrypt_send(
+      self._create_batch_command_no_checks(order_commands)
+    )
+
+  def _send_time_triggered_batch_no_checks(self, batch_command, order_commands):
+    batch_command['command'] = self._create_batch_command_no_checks(order_commands)
+    self._encrypt_send(
+      batch_command
+    )
+
+  def _create_batch_command_no_checks(self, order_commands):
+    return {
+      'type': 'batch',
+      'account_id': self._trader.account_id,
+      'batch': order_commands,
+    }
+
+  def _verify_batch_commands_and_set_nonces_and_account_id(self, order_commands):
     self._check_if_initialized()
     if len(order_commands) == 0:
       raise ValueError("Empty batch")
@@ -324,35 +499,6 @@ class UserStream(object):
       else:
         raise ValueError('Unsupported command type: ' + type)
       self._set_nonce_account_id(command)
-    self._send_batch_no_checks(order_commands)
-
-  def start_batch(self):
-    """
-    After this method is called all calls to place_order, cancel_order, modify_order result in
-    caching of the commands which are then sent once send_batch is called.
-    """
-    self._batch = []
-    self._batching = True
-
-  def send_batch(self):
-    """
-    Sends batch created from calling place_order, cancel_order, modify_order after calling
-    start_batch.
-    """
-    if not self._batching:
-      raise Exception('send_batch called without calling start_batch first')
-    if len(self._batch) == 0:
-      raise ValueError("Empty batch")
-    self._send_batch_no_checks(self._batch)
-    self._batch = None
-    self._batching = False
-
-  def _send_batch_no_checks(self, order_commands):
-    self._encrypt_send({
-      'type': 'batch',
-      'account_id': self._trader.account_id,
-      'batch': order_commands,
-    })
 
   def initialize(self):
     self._encrypt_send({
@@ -397,13 +543,17 @@ class UserStream(object):
         continue
 
       self._call_listeners('on_message', entity)
-      self._call_listeners('on_' + entity['type'], entity)
+      self._call_listeners('on_' + self._to_listener_name(entity['type']), entity)
 
   def on_error(self, error):
     self._call_listeners('on_error', error)
 
   def on_disconnect(self, message):
     self._call_listeners('on_disconnect', message)
+
+  def _to_listener_name(self, entity_type):
+    mapped_listener_name = self.type_listener.get(entity_type)
+    return mapped_listener_name if mapped_listener_name else entity_type
 
   def _set_nonce_account_id(self, entity):
     self._nonce += 1
