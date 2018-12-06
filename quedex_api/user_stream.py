@@ -188,6 +188,25 @@ class UserStreamListener(object):
     """
     pass
 
+  def on_time_triggered_batch_updated(self, time_triggered_batch_updated):
+    """
+    :param time_triggered_batch_updated: a dict of the following format:
+      {
+        "timer_id": "<string id>",
+      }
+    """
+    pass
+
+  def on_time_triggered_batch_update_failed(self, time_triggered_batch_update_failed):
+    """
+    :param time_triggered_batch_update_failed: a dict of the following format:
+      {
+        "timer_id": "<string id>",
+        "cause": "not_found"/"timer_execution_interval_broken",
+      }
+    """
+    pass
+
   def on_error(self, error):
     """
     Called when an error with market stream occurs (data parsing, signature verification, webosocket
@@ -232,7 +251,9 @@ class UserStream(object):
     'timer_added': 'time_triggered_batch_added',
     'timer_rejected': 'time_triggered_batch_rejected',
     'timer_expired': 'time_triggered_batch_expired',
-    'timer_triggered': 'time_triggered_batch_triggered'
+    'timer_triggered': 'time_triggered_batch_triggered',
+    'timer_updated': 'time_triggered_batch_updated',
+    'timer_update_failed': 'time_triggered_batch_update_failed'
   }
 
   def __init__(self, exchange, trader, nonce_group=5):
@@ -415,6 +436,7 @@ class UserStream(object):
       ...
      ]
     """
+    self._check_if_initialized()
     command = {
       'type': 'add_timer',
       'timer_id': timer_id,
@@ -423,8 +445,8 @@ class UserStream(object):
     }
     self._set_nonce_account_id(command)
     self._verify_batch_commands_and_set_nonces_and_account_id(order_commands)
-
-    self._send_time_triggered_batch_no_checks(command, order_commands)
+    command['command'] = self._create_batch_command_no_checks(order_commands)
+    self._encrypt_send(command)
 
   def start_time_triggered_batch(self, timer_id, execution_start_timestamp, execution_expiration_timestamp):
     """
@@ -435,6 +457,7 @@ class UserStream(object):
     :param execution_start_timestamp: the defined batch will not be executed before this timestamp
     :param execution_expiration_timestamp: the defined batch will not be executed after this timestamp
     """
+    self._check_if_initialized()
     if self._batch_mode == self.BatchMode.STANDARD:
       raise Exception('Cannot start another batch. Currently creating batch')
     if self._batch_mode == self.BatchMode.TIME_TRIGGERED_UPDATE:
@@ -459,20 +482,125 @@ class UserStream(object):
       raise Exception('Send_batch called without calling start_time_triggered_batch first')
     if len(self._batch) == 0:
       raise ValueError("Empty batch")
-    self._send_time_triggered_batch_no_checks(self._time_triggered_batch_command, self._batch)
+    self._time_triggered_batch_command['command'] = self._create_batch_command_no_checks(self._batch)
+    self._encrypt_send(self._time_triggered_batch_command)
     self._batch = None
     self._batch_mode = None
     self._time_triggered_batch_command = None
 
+  def update_time_triggered_batch(self, timer_id, new_execution_start_timestamp, new_execution_expiration_timestamp, new_order_commands):
+    """
+    Updates an existing time triggered batch in exchange engine.
+
+    At least one of the following must be specified
+    - new_execution_start_timestamp
+    - new_execution_expiration_timestamp
+    - new_order_commands
+
+    :param timerId: a user defined timer identifier, can be used to cancel or update batch
+    :param new_execution_start_timestamp: new value of executionStartTimestamp (optional)
+    :param new_execution_expiration_timestamp: new value of executionStartTimestamp (optional)
+    :param new_order_commands: a new list with a number of commands (optional) where the following are possible:
+     [
+      {
+        "type": "place_order",
+        // for the rest of the fields see place_order method
+      },
+      {
+        "type": "cancel_order",
+        // for the rest of the fields see cancel_order method
+      },
+      {
+        "type": "modify_order",
+        // for the rest of the fields see modify_order method
+      },
+      {
+        "type": "cancel_all_orders",
+      },
+      ...
+     ]
+
+
+    """
+    self._check_if_initialized()
+    command = self._create_update_timer_command(
+      timer_id,
+      new_execution_start_timestamp,
+      new_execution_expiration_timestamp
+    )
+    if not new_order_commands == None and not len(new_order_commands) == 0:
+      self._verify_batch_commands_and_set_nonces_and_account_id(new_order_commands)
+      command['new_command'] = self._create_batch_command_no_checks(new_order_commands)
+    self._validate_update_command(command)
+    self._encrypt_send(command)
+
+  def start_update_time_triggered_batch(self, timer_id, new_execution_start_timestamp, new_execution_expiration_timestamp):
+    """
+    This method is used to update an existing time triggered batch.
+
+    After this method is called all calls to place_order, cancel_order, modify_order result in
+    caching of the commands which are then sent once send_update_time_triggered_batch is called.
+    These commands replace commands specified during the batch creation.
+
+    At least one of the following must be modified:
+    - execution_start_timestamp
+    - execution_expiration_timestamp
+    - order_commands (by calling methods like place_order etc.)
+
+    :param timerId: a user defined timer identifier, the same as used when creating the batch
+    :param new_execution_start_timestamp: new value of executionStartTimestamp (optional)
+    :param new_execution_expiration_timestamp: new value of executionStartTimestamp (optional)
+    """
+    self._check_if_initialized()
+    if self._batch_mode == self.BatchMode.STANDARD:
+      raise Exception('Cannot start another batch. Currently creating batch')
+    if self._batch_mode == self.BatchMode.TIME_TRIGGERED_CREATE:
+      raise Exception('Cannot start another batch. Currently creating time triggered batch')
+    self._batch = []
+    self._batch_mode = self.BatchMode.TIME_TRIGGERED_UPDATE
+    self._time_triggered_batch_command = self._create_update_timer_command(
+      timer_id,
+      new_execution_start_timestamp,
+      new_execution_expiration_timestamp
+    )
+
+  def send_update_time_triggered_batch(self):
+    """
+    Updates an existing time triggered batch. At least one of the following must be modified:
+    - execution_start_timestamp
+    - execution_expiration_timestamp
+    - order_commands (by calling place_order, cancel_order, modify_order after calling start_update_time_triggered_batch)
+    """
+    if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_UPDATE):
+      raise Exception('Send_batch called without calling start_update_time_triggered_batch first')
+
+    if not self._batch == None and not len(self._batch) == 0:
+      self._time_triggered_batch_command['new_command'] = self._create_batch_command_no_checks(self._batch)
+    self._validate_update_command(self._time_triggered_batch_command)
+    self._encrypt_send(self._time_triggered_batch_command)
+    self._batch = None
+    self._batch_mode = None
+    self._time_triggered_batch_command = None
+
+  def _create_update_timer_command(self, timer_id, new_execution_start_timestamp, new_execution_expiration_timestamp):
+    command = {
+      'type': 'update_timer',
+      'timer_id': timer_id,
+      'new_execution_start_timestamp': new_execution_start_timestamp,
+      'new_execution_expiration_timestamp': new_execution_expiration_timestamp
+    }
+    self._set_nonce_account_id(command)
+    return command
+
+  def _validate_update_command(self, update_timer_command):
+    if (update_timer_command.get('new_command') == None
+        and update_timer_command['new_execution_start_timestamp'] == None
+        and update_timer_command['new_execution_expiration_timestamp'] == None):
+      raise ValueError('Update at least one: order_commands, execution_start_timestamp, execution_expiration_timestamp')
+
   def _send_batch_no_checks(self, order_commands):
     self._encrypt_send(
       self._create_batch_command_no_checks(order_commands)
-    )
-
-  def _send_time_triggered_batch_no_checks(self, batch_command, order_commands):
-    batch_command['command'] = self._create_batch_command_no_checks(order_commands)
-    self._encrypt_send(
-      batch_command
     )
 
   def _create_batch_command_no_checks(self, order_commands):
@@ -483,7 +611,6 @@ class UserStream(object):
     }
 
   def _verify_batch_commands_and_set_nonces_and_account_id(self, order_commands):
-    self._check_if_initialized()
     if len(order_commands) == 0:
       raise ValueError("Empty batch")
     for command in order_commands:

@@ -193,6 +193,22 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.time_triggered_batch_triggered, timer_triggered)
     self.assertEqual(self.listener.message, timer_triggered)
 
+  def test_receiving_time_triggered_batch_updated(self):
+    timer_updated = {'type': 'timer_updated', 'timer_id': 1}
+    self.user_stream.on_message(self.serialize_to_trader([timer_updated]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.time_triggered_batch_updated, timer_updated)
+    self.assertEqual(self.listener.message, timer_updated)
+
+  def test_receiving_time_triggered_batch_update_failed(self):
+    timer_update_failed = {'type': 'timer_update_failed', 'timer_id': 1, 'cause': 'not_found'}
+    self.user_stream.on_message(self.serialize_to_trader([timer_update_failed]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.time_triggered_batch_update_failed, timer_update_failed)
+    self.assertEqual(self.listener.message, timer_update_failed)
+
   def test_receives_batch(self):
     filled1 = {'type': 'order_filled', 'leaves_quantity': 4}
     filled2 = {'type': 'order_filled', 'leaves_quantity': 5}
@@ -580,7 +596,7 @@ class TestUserStream(TestCase):
 
     self.assertTrue(exception_caught)
 
-  def test_cannot_start_batch_when_time_triggered_batch_has_been_initialized(self):
+  def test_cannot_start_batch_when_start_time_triggered_batch_has_been_called(self):
     self.initialize()
 
     exception_caught = False
@@ -593,7 +609,20 @@ class TestUserStream(TestCase):
 
     self.assertTrue(exception_caught)
 
-  def test_cannot_start_time_triggered_batch_when_batch_has_been_initialized(self):
+  def test_cannot_start_batch_when_start_update_time_triggered_batch_has_been_called(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_update_time_triggered_batch(1, 100, 200)
+    try:
+      self.user_stream.start_batch()
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_cannot_start_time_triggered_batch_when_start_batch_has_been_called(self):
     self.initialize()
 
     exception_caught = False
@@ -606,7 +635,72 @@ class TestUserStream(TestCase):
 
     self.assertTrue(exception_caught)
 
-  def test_cannot_send_triggered_batch_when_batch_has_been_initialized(self):
+  def test_cannot_start_time_triggered_batch_when_start_update_time_triggered_batch_has_been_called(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_update_time_triggered_batch(1, 100, 200)
+    try:
+      self.user_stream.start_time_triggered_batch(1, 100, 200)
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_cannot_start_update_time_triggered_batch_when_start_batch_has_been_called(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_batch()
+    try:
+      self.user_stream.start_update_time_triggered_batch(1, 100, 200)
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_cannot_start_update_time_triggered_batch_when_start_time_triggered_batch_has_been_called(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_time_triggered_batch(1, 100, 200)
+    try:
+      self.user_stream.start_update_time_triggered_batch(1, 100, 200)
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_cannot_send_batch_when_start_time_triggered_batch_has_been_called(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_time_triggered_batch(1, 100, 200)
+    try:
+      self.user_stream.send_batch()
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_cannot_send_batch_when_start_update_time_triggered_batch_has_been_called(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_update_time_triggered_batch(1, 100, 200)
+    try:
+      self.user_stream.send_batch()
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_cannot_send_triggered_batch_when_start_batch_has_been_called(self):
     self.initialize()
 
     exception_caught = False
@@ -619,14 +713,41 @@ class TestUserStream(TestCase):
 
     self.assertTrue(exception_caught)
 
-  def test_cannot_send_batch_when_time_triggered_batch_has_been_initialized(self):
+  def test_cannot_send_triggered_batch_when_start_update_timer_triggered_batch_has_been_called(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_update_time_triggered_batch(1, 100, 200)
+    try:
+      self.user_stream.send_time_triggered_batch()
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+
+  def test_cannot_send_update_triggered_batch_when_start_batch_has_been_called(self):
+    self.initialize()
+
+    exception_caught = False
+
+    self.user_stream.start_batch()
+    try:
+      self.user_stream.send_update_time_triggered_batch()
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_cannot_send_update_triggered_batch_when_start_timer_triggered_batch_has_been_called(self):
     self.initialize()
 
     exception_caught = False
 
     self.user_stream.start_time_triggered_batch(1, 100, 200)
     try:
-      self.user_stream.send_batch()
+      self.user_stream.send_update_time_triggered_batch()
     except:
       exception_caught = True
 
@@ -743,6 +864,330 @@ class TestUserStream(TestCase):
       }
     })
 
+  def test_start_send_update_time_triggered_batch(self):
+    self.initialize()
+
+    self.user_stream.start_update_time_triggered_batch(1, 100, 200)
+    self.user_stream.cancel_all_orders()
+    self.user_stream.place_order({
+      'price': '9.87',
+      'client_order_id': 15,
+      'instrument_id': '76',
+      'quantity': 6,
+      'side': 'buy',
+      'order_type': 'limit',
+      'limit_price': '4.5',
+      'post_only': True,
+    })
+    self.user_stream.send_update_time_triggered_batch()
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'update_timer',
+      'timer_id': 1,
+      'new_execution_start_timestamp': 100,
+      'new_execution_expiration_timestamp': 200,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+      'new_command': {
+        'type': 'batch',
+        'account_id': '123456789',
+        'batch': [
+          {
+            'type': 'cancel_all_orders',
+            'account_id': '123456789',
+            'nonce': 8,
+            'nonce_group': 5,
+          },
+          {
+            'type': 'place_order',
+            'account_id': '123456789',
+            'nonce': 9,
+            'nonce_group': 5,
+            'price': '9.87',
+            'client_order_id': 15,
+            'instrument_id': '76',
+            'quantity': 6,
+            'side': 'buy',
+            'order_type': 'limit',
+            'limit_price': '4.5',
+            'post_only': True,
+          }
+        ]
+      }
+    })
+
+  def test_update_time_triggered_batch(self):
+    self.initialize()
+
+    self.user_stream.update_time_triggered_batch(
+      1,
+      100,
+      200,
+      [{
+        'type': 'cancel_all_orders',
+      }, {
+        'type': 'place_order',
+        'price': '9.87',
+        'client_order_id': 15,
+        'instrument_id': '76',
+        'quantity': 6,
+        'side': 'buy',
+        'order_type': 'limit',
+        'limit_price': '4.5',
+        'post_only': True,
+      }],
+    )
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'update_timer',
+      'timer_id': 1,
+      'new_execution_start_timestamp': 100,
+      'new_execution_expiration_timestamp': 200,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+      'new_command': {
+        'type': 'batch',
+        'account_id': '123456789',
+        'batch': [
+          {
+            'type': 'cancel_all_orders',
+            'account_id': '123456789',
+            'nonce': 8,
+            'nonce_group': 5,
+          },
+          {
+            'type': 'place_order',
+            'account_id': '123456789',
+            'nonce': 9,
+            'nonce_group': 5,
+            'price': '9.87',
+            'client_order_id': 15,
+            'instrument_id': '76',
+            'quantity': 6,
+            'side': 'buy',
+            'order_type': 'limit',
+            'limit_price': '4.5',
+            'post_only': True,
+          }
+        ]
+      }
+    })
+
+  def test_update_time_triggered_batch_when_no_changes(self):
+    self.initialize()
+
+    exception_caught = False
+
+    try:
+      self.user_stream.update_time_triggered_batch(
+        1,
+        None,
+        None,
+        None,
+      )
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_update_time_triggered_batch_when_only_start_timestamp_is_modified(self):
+    self.initialize()
+
+    self.user_stream.update_time_triggered_batch(
+      1,
+      100,
+      None,
+      None,
+    )
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'update_timer',
+      'timer_id': 1,
+      'new_execution_start_timestamp': 100,
+      'new_execution_expiration_timestamp': None,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+    })
+
+  def test_update_time_triggered_batch_when_only_expiration_time_is_modified(self):
+    self.initialize()
+
+    self.user_stream.update_time_triggered_batch(
+      1,
+      None,
+      200,
+      None,
+    )
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'update_timer',
+      'timer_id': 1,
+      'new_execution_start_timestamp': None,
+      'new_execution_expiration_timestamp': 200,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+    })
+
+  def test_update_time_triggered_batch_when_only_commands_are_modified(self):
+    self.initialize()
+
+    self.user_stream.update_time_triggered_batch(
+      1,
+      None,
+      None,
+      [{
+        'type': 'cancel_all_orders',
+      }, {
+        'type': 'place_order',
+        'price': '9.87',
+        'client_order_id': 15,
+        'instrument_id': '76',
+        'quantity': 6,
+        'side': 'buy',
+        'order_type': 'limit',
+        'limit_price': '4.5',
+        'post_only': True,
+      }],
+    )
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'update_timer',
+      'timer_id': 1,
+      'new_execution_start_timestamp': None,
+      'new_execution_expiration_timestamp': None,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+      'new_command': {
+        'type': 'batch',
+        'account_id': '123456789',
+        'batch': [
+          {
+            'type': 'cancel_all_orders',
+            'account_id': '123456789',
+            'nonce': 8,
+            'nonce_group': 5,
+          },
+          {
+            'type': 'place_order',
+            'account_id': '123456789',
+            'nonce': 9,
+            'nonce_group': 5,
+            'price': '9.87',
+            'client_order_id': 15,
+            'instrument_id': '76',
+            'quantity': 6,
+            'side': 'buy',
+            'order_type': 'limit',
+            'limit_price': '4.5',
+            'post_only': True,
+          }
+        ]
+      }
+    })
+
+  def test_start_send_update_time_triggered_batch_when_no_changes(self):
+    self.initialize()
+
+    exception_caught = False
+
+    try:
+      self.user_stream.start_update_time_triggered_batch(1, None, None)
+      self.user_stream.send_update_time_triggered_batch()
+    except:
+      exception_caught = True
+
+    self.assertTrue(exception_caught)
+
+  def test_start_send_update_time_triggered_batch_when_only_start_timestamp_is_modified(self):
+    self.initialize()
+
+    self.user_stream.start_update_time_triggered_batch(1, 100, None)
+    self.user_stream.send_update_time_triggered_batch()
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'update_timer',
+      'timer_id': 1,
+      'new_execution_start_timestamp': 100,
+      'new_execution_expiration_timestamp': None,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+    })
+
+  def test_start_send_update_time_triggered_batch_when_only_expiration_timestamp_is_modified(self):
+    self.initialize()
+
+    self.user_stream.start_update_time_triggered_batch(1, None, 200)
+    self.user_stream.send_update_time_triggered_batch()
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'update_timer',
+      'timer_id': 1,
+      'new_execution_start_timestamp': None,
+      'new_execution_expiration_timestamp': 200,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+    })
+
+  def test_start_send_update_time_triggered_batch_when_only_commands_are_modified(self):
+    self.initialize()
+
+    self.user_stream.start_update_time_triggered_batch(1, None, None)
+    self.user_stream.cancel_all_orders()
+    self.user_stream.place_order({
+      'price': '9.87',
+      'client_order_id': 15,
+      'instrument_id': '76',
+      'quantity': 6,
+      'side': 'buy',
+      'order_type': 'limit',
+      'limit_price': '4.5',
+      'post_only': True,
+    })
+    self.user_stream.send_update_time_triggered_batch()
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'update_timer',
+      'timer_id': 1,
+      'new_execution_start_timestamp': None,
+      'new_execution_expiration_timestamp': None,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+      'new_command': {
+        'type': 'batch',
+        'account_id': '123456789',
+        'batch': [
+          {
+            'type': 'cancel_all_orders',
+            'account_id': '123456789',
+            'nonce': 8,
+            'nonce_group': 5,
+          },
+          {
+            'type': 'place_order',
+            'account_id': '123456789',
+            'nonce': 9,
+            'nonce_group': 5,
+            'price': '9.87',
+            'client_order_id': 15,
+            'instrument_id': '76',
+            'quantity': 6,
+            'side': 'buy',
+            'order_type': 'limit',
+            'limit_price': '4.5',
+            'post_only': True,
+          }
+        ]
+      }
+    })
+
   def test_receives_welcome_pack_with_with_account_state(self):
     self.user_stream.initialize()
     self.user_stream.on_message(self.serialize_to_trader([{
@@ -806,7 +1251,6 @@ class TestUserStream(TestCase):
       'message_nonce_group': 5,
     }]))
 
-
 class TestListener(UserStreamListener):
   def __init__(self):
     self.order_place_failed = None
@@ -828,6 +1272,8 @@ class TestListener(UserStreamListener):
     self.time_triggered_batch_rejected = None
     self.time_triggered_batch_expired = None
     self.time_triggered_batch_triggered = None
+    self.time_triggered_batch_updated = None
+    self.time_triggered_batch_update_failed = None
     self.ready = False
 
   @property
@@ -893,6 +1339,12 @@ class TestListener(UserStreamListener):
 
   def on_time_triggered_batch_triggered(self, time_triggered_batch_triggered):
     self.time_triggered_batch_triggered = time_triggered_batch_triggered
+
+  def on_time_triggered_batch_updated(self, time_triggered_batch_updated):
+    self.time_triggered_batch_updated = time_triggered_batch_updated
+
+  def on_time_triggered_batch_update_failed(self, time_triggered_batch_update_failed):
+    self.time_triggered_batch_update_failed = time_triggered_batch_update_failed
 
 def sign_encrypt(entity, private_key, public_key):
   message = pgpy.PGPMessage.new(json.dumps(entity))
