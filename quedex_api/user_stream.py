@@ -429,12 +429,13 @@ class UserStream(object):
     self._batch = None
     self._batch_mode = None
 
-  def time_triggered_batch(self, timer_id, execution_start_timestamp, execution_expiration_timestamp, order_commands):
+  def time_triggered_batch(self, batch_id, execution_start_timestamp, execution_expiration_timestamp, order_commands):
     """
     Creates timer in exchange engine with a batch of order commands. These commands will be automatically
-    placed, between executionStartTimestamp and executionExpirationTimestamp.
+    processed, between executionStartTimestamp and executionExpirationTimestamp.
+    Identifier of the created timer is the same as batch_id.
 
-    :param timer_id: a user defined timer identifier, can be used to cancel or update batch
+    :param batch_id: a user defined timer identifier, can be used to cancel or update batch
     :param execution_start_timestamp: the defined batch will not be executed before this timestamp
     :param execution_expiration_timestamp: the defined batch will not be executed after this timestamp
     :param order_commands: a list with a number of commands where the following are possible:
@@ -460,7 +461,7 @@ class UserStream(object):
     self._check_if_initialized()
     command = {
       'type': 'add_timer',
-      'timer_id': timer_id,
+      'timer_id': batch_id,
       'execution_start_timestamp': execution_start_timestamp,
       'execution_expiration_timestamp': execution_expiration_timestamp
     }
@@ -469,12 +470,12 @@ class UserStream(object):
     command['command'] = self._create_batch_command_no_checks(order_commands)
     self._encrypt_send(command)
 
-  def start_time_triggered_batch(self, timer_id, execution_start_timestamp, execution_expiration_timestamp):
+  def start_time_triggered_batch(self, batch_id, execution_start_timestamp, execution_expiration_timestamp):
     """
     After this method is called all calls to place_order, cancel_order, modify_order result in
     caching of the commands which are then sent once send_time_triggered_batch is called.
 
-    :param timer_id: a user defined timer identifier, can be used to cancel or update batch
+    :param batch_id: a user defined timer identifier, can be used to cancel or update batch
     :param execution_start_timestamp: the defined batch will not be executed before this timestamp
     :param execution_expiration_timestamp: the defined batch will not be executed after this timestamp
     """
@@ -487,7 +488,7 @@ class UserStream(object):
     self._batch_mode = self.BatchMode.TIME_TRIGGERED_CREATE
     command = {
       'type': 'add_timer',
-      'timer_id': timer_id,
+      'timer_id': batch_id,
       'execution_start_timestamp': execution_start_timestamp,
       'execution_expiration_timestamp': execution_expiration_timestamp
     }
@@ -498,6 +499,10 @@ class UserStream(object):
     """
     Sends time triggered batch created from calling place_order, cancel_order, modify_order after calling
     start_time_triggered_batch, which creates timer in exchange engine with a batch of order commands.
+
+    Creates timer in exchange engine with a batch of order commands. These commands will be automatically
+    processed, between executionStartTimestamp and executionExpirationTimestamp.
+    Identifier of the created timer is the same as batch_id.
     """
     if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_CREATE):
       raise Exception('Send_batch called without calling start_time_triggered_batch first')
@@ -509,7 +514,7 @@ class UserStream(object):
     self._batch_mode = None
     self._time_triggered_batch_command = None
 
-  def update_time_triggered_batch(self, timer_id, new_execution_start_timestamp, new_execution_expiration_timestamp, new_order_commands):
+  def update_time_triggered_batch(self, batch_id, new_execution_start_timestamp, new_execution_expiration_timestamp, new_order_commands):
     """
     Updates an existing time triggered batch in exchange engine.
 
@@ -545,7 +550,7 @@ class UserStream(object):
     """
     self._check_if_initialized()
     command = self._create_update_timer_command(
-      timer_id,
+      batch_id,
       new_execution_start_timestamp,
       new_execution_expiration_timestamp
     )
@@ -555,7 +560,7 @@ class UserStream(object):
     self._validate_update_command(command)
     self._encrypt_send(command)
 
-  def start_update_time_triggered_batch(self, timer_id, new_execution_start_timestamp, new_execution_expiration_timestamp):
+  def start_update_time_triggered_batch(self, batch_id, new_execution_start_timestamp, new_execution_expiration_timestamp):
     """
     This method is used to update an existing time triggered batch.
 
@@ -580,7 +585,7 @@ class UserStream(object):
     self._batch = []
     self._batch_mode = self.BatchMode.TIME_TRIGGERED_UPDATE
     self._time_triggered_batch_command = self._create_update_timer_command(
-      timer_id,
+      batch_id,
       new_execution_start_timestamp,
       new_execution_expiration_timestamp
     )
@@ -603,7 +608,7 @@ class UserStream(object):
     self._batch_mode = None
     self._time_triggered_batch_command = None
 
-  def cancel_time_triggered_batch(self, timer_id):
+  def cancel_time_triggered_batch(self, batch_id):
     """
     Cancels an existing time triggered batch.
 
@@ -612,7 +617,7 @@ class UserStream(object):
     self._check_if_initialized()
     command = {
       'type': 'cancel_timer',
-      'timer_id': timer_id
+      'timer_id': batch_id
     }
     self._set_nonce_account_id(command)
     self._encrypt_send(command)
