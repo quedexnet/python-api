@@ -209,6 +209,22 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.time_triggered_batch_update_failed, timer_update_failed)
     self.assertEqual(self.listener.message, timer_update_failed)
 
+  def test_receiving_time_triggered_batch_cancelled(self):
+    timer_cancelled = {'type': 'timer_cancelled', 'timer_id': 1}
+    self.user_stream.on_message(self.serialize_to_trader([timer_cancelled]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.time_triggered_batch_cancelled, timer_cancelled)
+    self.assertEqual(self.listener.message, timer_cancelled)
+
+  def test_receiving_time_triggered_batch_cancel_failed(self):
+    timer_cancel_failed = {'type': 'timer_cancel_failed', 'timer_id': 1, 'cause': 'not_found'}
+    self.user_stream.on_message(self.serialize_to_trader([timer_cancel_failed]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.time_triggered_batch_cancel_failed, timer_cancel_failed)
+    self.assertEqual(self.listener.message, timer_cancel_failed)
+
   def test_receives_batch(self):
     filled1 = {'type': 'order_filled', 'leaves_quantity': 4}
     filled2 = {'type': 'order_filled', 'leaves_quantity': 5}
@@ -1188,6 +1204,19 @@ class TestUserStream(TestCase):
       }
     })
 
+  def test_cancel_time_triggered_batch(self):
+    self.initialize()
+
+    self.user_stream.cancel_time_triggered_batch(1)
+
+    self.assertEqual(self.decrypt_from_trader(self.sent_message), {
+      'type': 'cancel_timer',
+      'timer_id': 1,
+      'account_id': '123456789',
+      'nonce': 7,
+      'nonce_group': 5,
+    })
+
   def test_receives_welcome_pack_with_with_account_state(self):
     self.user_stream.initialize()
     self.user_stream.on_message(self.serialize_to_trader([{
@@ -1274,6 +1303,8 @@ class TestListener(UserStreamListener):
     self.time_triggered_batch_triggered = None
     self.time_triggered_batch_updated = None
     self.time_triggered_batch_update_failed = None
+    self.time_triggered_batch_cancelled = None
+    self.time_triggered_batch_cancel_failed = None
     self.ready = False
 
   @property
@@ -1345,6 +1376,12 @@ class TestListener(UserStreamListener):
 
   def on_time_triggered_batch_update_failed(self, time_triggered_batch_update_failed):
     self.time_triggered_batch_update_failed = time_triggered_batch_update_failed
+
+  def on_time_triggered_batch_cancelled(self, time_triggered_batch_cancelled):
+    self.time_triggered_batch_cancelled = time_triggered_batch_cancelled
+
+  def on_time_triggered_batch_cancel_failed(self, time_triggered_batch_cancel_failed):
+    self.time_triggered_batch_cancel_failed = time_triggered_batch_cancel_failed
 
 def sign_encrypt(entity, private_key, public_key):
   message = pgpy.PGPMessage.new(json.dumps(entity))
