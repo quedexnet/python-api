@@ -207,6 +207,25 @@ class UserStreamListener(object):
     """
     pass
 
+  def on_time_triggered_batch_cancelled(self, time_triggered_batch_cancelled):
+    """
+    :param time_triggered_batch_cancelled: a dict of the following format:
+      {
+        "timer_id": "<string id>",
+      }
+    """
+    pass
+
+  def on_time_triggered_batch_cancel_failed(self, time_triggered_batch_cancel_failed):
+    """
+    :param time_triggered_batch_cancel_failed: a dict of the following format:
+      {
+        "timer_id": "<string id>",
+        "cause": "not_found",
+      }
+    """
+    pass
+
   def on_error(self, error):
     """
     Called when an error with market stream occurs (data parsing, signature verification, webosocket
@@ -253,7 +272,9 @@ class UserStream(object):
     'timer_expired': 'time_triggered_batch_expired',
     'timer_triggered': 'time_triggered_batch_triggered',
     'timer_updated': 'time_triggered_batch_updated',
-    'timer_update_failed': 'time_triggered_batch_update_failed'
+    'timer_update_failed': 'time_triggered_batch_update_failed',
+    'timer_cancelled': 'time_triggered_batch_cancelled',
+    'timer_cancel_failed': 'time_triggered_batch_cancel_failed'
   }
 
   def __init__(self, exchange, trader, nonce_group=5):
@@ -581,6 +602,20 @@ class UserStream(object):
     self._batch = None
     self._batch_mode = None
     self._time_triggered_batch_command = None
+
+  def cancel_time_triggered_batch(self, timer_id):
+    """
+    Cancels an existing time triggered batch.
+
+    :param timerId: a user defined timer identifier, the same as used when creating the batch
+    """
+    self._check_if_initialized()
+    command = {
+      'type': 'cancel_timer',
+      'timer_id': timer_id
+    }
+    self._set_nonce_account_id(command)
+    self._encrypt_send(command)
 
   def _create_update_timer_command(self, timer_id, new_execution_start_timestamp, new_execution_expiration_timestamp):
     command = {
