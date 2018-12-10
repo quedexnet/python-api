@@ -151,18 +151,18 @@ class UserStreamListener(object):
     """
     pass
 
-  def on_time_triggered_batch_added(self, time_triggered_batch_added):
+  def on_timer_added(self, timer_added):
     """
-    :param time_triggered_batch_added: a dict of the following format:
+    :param timer_added: a dict of the following format:
       {
         "timer_id": "<string id>",
       }
     """
     pass
 
-  def on_time_triggered_batch_rejected(self, time_triggered_batch_rejected):
+  def on_timer_rejected(self, timer_rejected):
     """
-    :param time_triggered_batch_rejected: a dict of the following format:
+    :param timer_rejected: a dict of the following format:
       {
         "timer_id": "<string id>",
         "cause": "too_many_active_timers"/"timer_already_expired"/"timer_already_exists",
@@ -170,36 +170,36 @@ class UserStreamListener(object):
     """
     pass
 
-  def on_time_triggered_batch_expired(self, time_triggered_batch_expired):
+  def on_timer_expired(self, timer_expired):
     """
-    :param time_triggered_batch_expired: a dict of the following format:
+    :param timer_expired: a dict of the following format:
       {
         "timer_id": "<string id>",
       }
     """
     pass
 
-  def on_time_triggered_batch_triggered(self, time_triggered_batch_triggered):
+  def on_timer_triggered(self, timer_triggered):
     """
-    :param time_triggered_batch_triggered: a dict of the following format:
+    :param timer_triggered: a dict of the following format:
       {
         "timer_id": "<string id>",
       }
     """
     pass
 
-  def on_time_triggered_batch_updated(self, time_triggered_batch_updated):
+  def on_timer_updated(self, timer_updated):
     """
-    :param time_triggered_batch_updated: a dict of the following format:
+    :param timer_updated: a dict of the following format:
       {
         "timer_id": "<string id>",
       }
     """
     pass
 
-  def on_time_triggered_batch_update_failed(self, time_triggered_batch_update_failed):
+  def on_timer_update_failed(self, timer_update_failed):
     """
-    :param time_triggered_batch_update_failed: a dict of the following format:
+    :param timer_update_failed: a dict of the following format:
       {
         "timer_id": "<string id>",
         "cause": "not_found"/"timer_execution_interval_broken",
@@ -207,18 +207,18 @@ class UserStreamListener(object):
     """
     pass
 
-  def on_time_triggered_batch_cancelled(self, time_triggered_batch_cancelled):
+  def on_timer_cancelled(self, timer_cancelled):
     """
-    :param time_triggered_batch_cancelled: a dict of the following format:
+    :param timer_cancelled: a dict of the following format:
       {
         "timer_id": "<string id>",
       }
     """
     pass
 
-  def on_time_triggered_batch_cancel_failed(self, time_triggered_batch_cancel_failed):
+  def on_timer_cancel_failed(self, timer_cancel_failed):
     """
-    :param time_triggered_batch_cancel_failed: a dict of the following format:
+    :param timer_cancel_failed: a dict of the following format:
       {
         "timer_id": "<string id>",
         "cause": "not_found",
@@ -265,17 +265,6 @@ class UserStream(object):
     STANDARD = 1
     TIME_TRIGGERED_CREATE = 2
     TIME_TRIGGERED_UPDATE = 3
-
-  type_listener  = {
-    'timer_added': 'time_triggered_batch_added',
-    'timer_rejected': 'time_triggered_batch_rejected',
-    'timer_expired': 'time_triggered_batch_expired',
-    'timer_triggered': 'time_triggered_batch_triggered',
-    'timer_updated': 'time_triggered_batch_updated',
-    'timer_update_failed': 'time_triggered_batch_update_failed',
-    'timer_cancelled': 'time_triggered_batch_cancelled',
-    'timer_cancel_failed': 'time_triggered_batch_cancel_failed'
-  }
 
   def __init__(self, exchange, trader, nonce_group=5):
     """
@@ -429,13 +418,21 @@ class UserStream(object):
     self._batch = None
     self._batch_mode = None
 
-  def time_triggered_batch(self, batch_id, execution_start_timestamp, execution_expiration_timestamp, order_commands):
+  def time_triggered_batch(self, timer_id, execution_start_timestamp, execution_expiration_timestamp, order_commands):
     """
-    Creates timer in exchange engine with a batch of order commands. These commands will be automatically
-    processed, between executionStartTimestamp and executionExpirationTimestamp.
-    Identifier of the created timer is the same as batch_id.
+    Sends a time triggered batch with the given list of order commands to the exchange.
+    When a time triggered batch is received by the exchange engine, a new timer is registered.
+    Based on the timer configuration, at some point in the future (between executionStartTimestamp and executionExpirationTimestamp),
+    all the carried order commands are processed, one by one, in the creation order. If executionStartTimestamp is in the past
+    and executionExpirationTimestamp is in the future, the batch will be processed immediately.
 
-    :param batch_id: a user defined timer identifier, can be used to cancel or update batch
+    Timers are ordered by executionStartTimestamp and order of arrival. Timers with earlier executionStartTimestamp are processed first.
+    When there are more timers with the same executionStartTimestamp they are triggered by the order of arrival.
+
+    Note: timers are evaluated each time a new command is processed by the exchange engine. If between executionStartTimestamp
+    and executionExpirationTimestamp no new command is processed by the engine, the timer will not be triggered, and will expire.
+
+    :param timer_id: a user defined timer identifier, can be used to cancel or update batch
     :param execution_start_timestamp: the defined batch will not be executed before this timestamp
     :param execution_expiration_timestamp: the defined batch will not be executed after this timestamp
     :param order_commands: a list with a number of commands where the following are possible:
@@ -461,7 +458,7 @@ class UserStream(object):
     self._check_if_initialized()
     command = {
       'type': 'add_timer',
-      'timer_id': batch_id,
+      'timer_id': timer_id,
       'execution_start_timestamp': execution_start_timestamp,
       'execution_expiration_timestamp': execution_expiration_timestamp
     }
@@ -470,12 +467,12 @@ class UserStream(object):
     command['command'] = self._create_batch_command_no_checks(order_commands)
     self._encrypt_send(command)
 
-  def start_time_triggered_batch(self, batch_id, execution_start_timestamp, execution_expiration_timestamp):
+  def start_time_triggered_batch(self, timer_id, execution_start_timestamp, execution_expiration_timestamp):
     """
     After this method is called all calls to place_order, cancel_order, modify_order result in
     caching of the commands which are then sent once send_time_triggered_batch is called.
 
-    :param batch_id: a user defined timer identifier, can be used to cancel or update batch
+    :param timer_id: a user defined timer identifier, can be used to cancel or update batch
     :param execution_start_timestamp: the defined batch will not be executed before this timestamp
     :param execution_expiration_timestamp: the defined batch will not be executed after this timestamp
     """
@@ -488,7 +485,7 @@ class UserStream(object):
     self._batch_mode = self.BatchMode.TIME_TRIGGERED_CREATE
     command = {
       'type': 'add_timer',
-      'timer_id': batch_id,
+      'timer_id': timer_id,
       'execution_start_timestamp': execution_start_timestamp,
       'execution_expiration_timestamp': execution_expiration_timestamp
     }
@@ -500,12 +497,19 @@ class UserStream(object):
     Sends time triggered batch created from calling place_order, cancel_order, modify_order after calling
     start_time_triggered_batch, which creates timer in exchange engine with a batch of order commands.
 
-    Creates timer in exchange engine with a batch of order commands. These commands will be automatically
-    processed, between executionStartTimestamp and executionExpirationTimestamp.
-    Identifier of the created timer is the same as batch_id.
+    When a time triggered batch is received by the exchange engine, a new timer is registered.
+    Based on the timer configuration, at some point in the future (between executionStartTimestamp and executionExpirationTimestamp),
+    all the carried order commands are processed, one by one, in the creation order. If executionStartTimestamp is in the past
+    and executionExpirationTimestamp is in the future, the batch will be processed immediately.
+
+    Timers are ordered by executionStartTimestamp and order of arrival. Timers with earlier executionStartTimestamp are processed first.
+    When there are more timers with the same executionStartTimestamp they are triggered by the order of arrival.
+
+    Note: timers are evaluated each time a new command is processed by the exchange engine. If between executionStartTimestamp
+    and executionExpirationTimestamp no new command is processed by the engine, the timer will not be triggered, and will expire.
     """
     if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_CREATE):
-      raise Exception('Send_batch called without calling start_time_triggered_batch first')
+      raise Exception('send_time_triggered_batch called without calling start_time_triggered_batch first')
     if len(self._batch) == 0:
       raise ValueError("Empty batch")
     self._time_triggered_batch_command['command'] = self._create_batch_command_no_checks(self._batch)
@@ -514,16 +518,22 @@ class UserStream(object):
     self._batch_mode = None
     self._time_triggered_batch_command = None
 
-  def update_time_triggered_batch(self, batch_id, new_execution_start_timestamp, new_execution_expiration_timestamp, new_order_commands):
+  def update_time_triggered_batch(self, timer_id, new_execution_start_timestamp, new_execution_expiration_timestamp, new_order_commands):
     """
-    Updates an existing time triggered batch in exchange engine.
+    Sends the modified batch to the exchange.
 
-    At least one of the following must be specified
-    - new_execution_start_timestamp
-    - new_execution_expiration_timestamp
-    - new_order_commands
+    At least one of the following must be modified:
+    - execution_start_timestamp
+    - execution_expiration_timestamp
+    - order_commands
 
-    :param timerId: a user defined timer identifier, can be used to cancel or update batch
+    Specified batch replaces the one registered during the timer creation.
+    When only new_execution_start_timestamp or new order commands are specified, the timer is modified in place.
+    This means that the update does not change the order of registered timers.
+    When new_execution_expiration_timestamp is specified, then the timer will be placed after already existing timers
+    with the same execution_expiration_timestamp.
+
+    :param timer_id: a user defined timer identifier, can be used to cancel or update batch
     :param new_execution_start_timestamp: new value of executionStartTimestamp (optional)
     :param new_execution_expiration_timestamp: new value of executionStartTimestamp (optional)
     :param new_order_commands: a new list with a number of commands (optional) where the following are possible:
@@ -545,12 +555,10 @@ class UserStream(object):
       },
       ...
      ]
-
-
     """
     self._check_if_initialized()
     command = self._create_update_timer_command(
-      batch_id,
+      timer_id,
       new_execution_start_timestamp,
       new_execution_expiration_timestamp
     )
@@ -560,7 +568,7 @@ class UserStream(object):
     self._validate_update_command(command)
     self._encrypt_send(command)
 
-  def start_update_time_triggered_batch(self, batch_id, new_execution_start_timestamp, new_execution_expiration_timestamp):
+  def start_update_time_triggered_batch(self, timer_id, new_execution_start_timestamp, new_execution_expiration_timestamp):
     """
     This method is used to update an existing time triggered batch.
 
@@ -573,7 +581,7 @@ class UserStream(object):
     - execution_expiration_timestamp
     - order_commands (by calling methods like place_order etc.)
 
-    :param timerId: a user defined timer identifier, the same as used when creating the batch
+    :param timer_id: a user defined timer identifier, the same as used when creating the batch
     :param new_execution_start_timestamp: new value of executionStartTimestamp (optional)
     :param new_execution_expiration_timestamp: new value of executionStartTimestamp (optional)
     """
@@ -585,20 +593,29 @@ class UserStream(object):
     self._batch = []
     self._batch_mode = self.BatchMode.TIME_TRIGGERED_UPDATE
     self._time_triggered_batch_command = self._create_update_timer_command(
-      batch_id,
+      timer_id,
       new_execution_start_timestamp,
       new_execution_expiration_timestamp
     )
 
   def send_update_time_triggered_batch(self):
     """
-    Updates an existing time triggered batch. At least one of the following must be modified:
+    Sends the modified batch to the exchange.
+
+    At least one of the following must be modified:
     - execution_start_timestamp
     - execution_expiration_timestamp
     - order_commands (by calling place_order, cancel_order, modify_order after calling start_update_time_triggered_batch)
+
+    Specified batch replaces the one registered during the timer creation.
+    When only execution_start_timestamp or new order commands are specified, the timer is modified in place.
+    This means that the update does not change the order of registered timers.
+    When execution_expiration_timestamp is modified, then the timer will be placed after already existing timers
+    with the same execution_start_timestamp.
+
     """
     if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_UPDATE):
-      raise Exception('Send_batch called without calling start_update_time_triggered_batch first')
+      raise Exception('send_update_time_triggered_batch called without calling start_update_time_triggered_batch first')
 
     if not self._batch == None and not len(self._batch) == 0:
       self._time_triggered_batch_command['new_command'] = self._create_batch_command_no_checks(self._batch)
@@ -608,16 +625,16 @@ class UserStream(object):
     self._batch_mode = None
     self._time_triggered_batch_command = None
 
-  def cancel_time_triggered_batch(self, batch_id):
+  def cancel_time_triggered_batch(self, timer_id):
     """
     Cancels an existing time triggered batch.
 
-    :param timerId: a user defined timer identifier, the same as used when creating the batch
+    :param timer_id: a user defined timer identifier, the same as used when creating the batch
     """
     self._check_if_initialized()
     command = {
       'type': 'cancel_timer',
-      'timer_id': batch_id
+      'timer_id': timer_id
     }
     self._set_nonce_account_id(command)
     self._encrypt_send(command)
@@ -710,17 +727,13 @@ class UserStream(object):
         continue
 
       self._call_listeners('on_message', entity)
-      self._call_listeners('on_' + self._to_listener_name(entity['type']), entity)
+      self._call_listeners('on_' + entity['type'], entity)
 
   def on_error(self, error):
     self._call_listeners('on_error', error)
 
   def on_disconnect(self, message):
     self._call_listeners('on_disconnect', message)
-
-  def _to_listener_name(self, entity_type):
-    mapped_listener_name = self.type_listener.get(entity_type)
-    return mapped_listener_name if mapped_listener_name else entity_type
 
   def _set_nonce_account_id(self, entity):
     self._nonce += 1

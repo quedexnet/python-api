@@ -7,7 +7,7 @@ from quedex_api import UserStream, UserStreamListener, Trader, Exchange
 
 
 class TestUserStream(TestCase):
-  maxDiff = None
+  # maxDiff = None
 
   def setUp(self):
     self.quedex_private_key = pgpy.PGPKey()
@@ -161,68 +161,68 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.order_filled, order_filled)
     self.assertEqual(self.listener.message, order_filled)
 
-  def test_receiving_time_triggered_batch_added(self):
+  def test_receiving_timer_added(self):
     timer_added = {'type': 'timer_added', 'timer_id': 1}
     self.user_stream.on_message(self.serialize_to_trader([timer_added]))
 
     self.assertEqual(self.listener.error, None)
-    self.assertEqual(self.listener.time_triggered_batch_added, timer_added)
+    self.assertEqual(self.listener.timer_added, timer_added)
     self.assertEqual(self.listener.message, timer_added)
 
-  def test_receiving_time_triggered_batch_rejected(self):
+  def test_receiving_timer_rejected(self):
     timer_rejected = {'type': 'timer_rejected', 'timer_id': 1, 'cause': 'too_many_active_timers'}
     self.user_stream.on_message(self.serialize_to_trader([timer_rejected]))
 
     self.assertEqual(self.listener.error, None)
-    self.assertEqual(self.listener.time_triggered_batch_rejected, timer_rejected)
+    self.assertEqual(self.listener.timer_rejected, timer_rejected)
     self.assertEqual(self.listener.message, timer_rejected)
 
-  def test_receiving_time_triggered_batch_expired(self):
+  def test_receiving_timer_expired(self):
     timer_expired = {'type': 'timer_expired', 'timer_id': 1}
     self.user_stream.on_message(self.serialize_to_trader([timer_expired]))
 
     self.assertEqual(self.listener.error, None)
-    self.assertEqual(self.listener.time_triggered_batch_expired, timer_expired)
+    self.assertEqual(self.listener.timer_expired, timer_expired)
     self.assertEqual(self.listener.message, timer_expired)
 
-  def test_receiving_time_triggered_batch_triggered(self):
+  def test_receiving_timer_triggered(self):
     timer_triggered = {'type': 'timer_triggered', 'timer_id': 1}
     self.user_stream.on_message(self.serialize_to_trader([timer_triggered]))
 
     self.assertEqual(self.listener.error, None)
-    self.assertEqual(self.listener.time_triggered_batch_triggered, timer_triggered)
+    self.assertEqual(self.listener.timer_triggered, timer_triggered)
     self.assertEqual(self.listener.message, timer_triggered)
 
-  def test_receiving_time_triggered_batch_updated(self):
+  def test_receiving_timer_updated(self):
     timer_updated = {'type': 'timer_updated', 'timer_id': 1}
     self.user_stream.on_message(self.serialize_to_trader([timer_updated]))
 
     self.assertEqual(self.listener.error, None)
-    self.assertEqual(self.listener.time_triggered_batch_updated, timer_updated)
+    self.assertEqual(self.listener.timer_updated, timer_updated)
     self.assertEqual(self.listener.message, timer_updated)
 
-  def test_receiving_time_triggered_batch_update_failed(self):
+  def test_receiving_timer_update_failed(self):
     timer_update_failed = {'type': 'timer_update_failed', 'timer_id': 1, 'cause': 'not_found'}
     self.user_stream.on_message(self.serialize_to_trader([timer_update_failed]))
 
     self.assertEqual(self.listener.error, None)
-    self.assertEqual(self.listener.time_triggered_batch_update_failed, timer_update_failed)
+    self.assertEqual(self.listener.timer_failed, timer_update_failed)
     self.assertEqual(self.listener.message, timer_update_failed)
 
-  def test_receiving_time_triggered_batch_cancelled(self):
+  def test_receiving_timer_cancelled(self):
     timer_cancelled = {'type': 'timer_cancelled', 'timer_id': 1}
     self.user_stream.on_message(self.serialize_to_trader([timer_cancelled]))
 
     self.assertEqual(self.listener.error, None)
-    self.assertEqual(self.listener.time_triggered_batch_cancelled, timer_cancelled)
+    self.assertEqual(self.listener.timer_cancelled, timer_cancelled)
     self.assertEqual(self.listener.message, timer_cancelled)
 
-  def test_receiving_time_triggered_batch_cancel_failed(self):
+  def test_receiving_timer_cancel_failed(self):
     timer_cancel_failed = {'type': 'timer_cancel_failed', 'timer_id': 1, 'cause': 'not_found'}
     self.user_stream.on_message(self.serialize_to_trader([timer_cancel_failed]))
 
     self.assertEqual(self.listener.error, None)
-    self.assertEqual(self.listener.time_triggered_batch_cancel_failed, timer_cancel_failed)
+    self.assertEqual(self.listener.timer_failed, timer_cancel_failed)
     self.assertEqual(self.listener.message, timer_cancel_failed)
 
   def test_receives_batch(self):
@@ -1297,14 +1297,14 @@ class TestListener(UserStreamListener):
     self.cancel_all_orders_failed = None
     self.order_forcefully_cancelled = None
     self.order_filled = None
-    self.time_triggered_batch_added = None
-    self.time_triggered_batch_rejected = None
-    self.time_triggered_batch_expired = None
-    self.time_triggered_batch_triggered = None
-    self.time_triggered_batch_updated = None
-    self.time_triggered_batch_update_failed = None
-    self.time_triggered_batch_cancelled = None
-    self.time_triggered_batch_cancel_failed = None
+    self.timer_added = None
+    self.timer_rejected = None
+    self.timer_expired = None
+    self.timer_triggered = None
+    self.timer_updated = None
+    self.timer_failed = None
+    self.timer_cancelled = None
+    self.timer_failed = None
     self.ready = False
 
   @property
@@ -1359,29 +1359,29 @@ class TestListener(UserStreamListener):
   def on_order_filled(self, order_filled):
     self.order_filled = order_filled
 
-  def on_time_triggered_batch_added(self, time_triggered_batch_added):
-    self.time_triggered_batch_added = time_triggered_batch_added
+  def on_timer_added(self, timer_added):
+    self.timer_added = timer_added
 
-  def on_time_triggered_batch_rejected(self, time_triggered_batch_rejected):
-    self.time_triggered_batch_rejected = time_triggered_batch_rejected
+  def on_timer_rejected(self, timer_rejected):
+    self.timer_rejected = timer_rejected
 
-  def on_time_triggered_batch_expired(self, time_triggered_batch_expired):
-    self.time_triggered_batch_expired = time_triggered_batch_expired
+  def on_timer_expired(self, timer_expired):
+    self.timer_expired = timer_expired
 
-  def on_time_triggered_batch_triggered(self, time_triggered_batch_triggered):
-    self.time_triggered_batch_triggered = time_triggered_batch_triggered
+  def on_timer_triggered(self, timer_triggered):
+    self.timer_triggered = timer_triggered
 
-  def on_time_triggered_batch_updated(self, time_triggered_batch_updated):
-    self.time_triggered_batch_updated = time_triggered_batch_updated
+  def on_timer_updated(self, timer_updated):
+    self.timer_updated = timer_updated
 
-  def on_time_triggered_batch_update_failed(self, time_triggered_batch_update_failed):
-    self.time_triggered_batch_update_failed = time_triggered_batch_update_failed
+  def on_timer_update_failed(self, timer_update_failed):
+    self.timer_failed = timer_update_failed
 
-  def on_time_triggered_batch_cancelled(self, time_triggered_batch_cancelled):
-    self.time_triggered_batch_cancelled = time_triggered_batch_cancelled
+  def on_timer_cancelled(self, timer_cancelled):
+    self.timer_cancelled = timer_cancelled
 
-  def on_time_triggered_batch_cancel_failed(self, time_triggered_batch_cancel_failed):
-    self.time_triggered_batch_cancel_failed = time_triggered_batch_cancel_failed
+  def on_timer_cancel_failed(self, timer_cancel_failed):
+    self.timer_failed = timer_cancel_failed
 
 def sign_encrypt(entity, private_key, public_key):
   message = pgpy.PGPMessage.new(json.dumps(entity))
