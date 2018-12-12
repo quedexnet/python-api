@@ -423,14 +423,9 @@ class UserStream(object):
     Sends a time triggered batch with the given list of order commands to the exchange.
     When a time triggered batch is received by the exchange engine, a new timer is registered.
     Based on the timer configuration, at some point in the future (between executionStartTimestamp and executionExpirationTimestamp),
-    all the carried order commands are processed, one by one, in the creation order. If executionStartTimestamp is in the past
-    and executionExpirationTimestamp is in the future, the batch will be processed immediately.
+    all the carried order commands are processed, one by one, in the creation order.
 
-    Timers are ordered by executionStartTimestamp and order of arrival. Timers with earlier executionStartTimestamp are processed first.
-    When there are more timers with the same executionStartTimestamp they are triggered by the order of arrival.
-
-    Note: timers are evaluated each time a new command is processed by the exchange engine. If between executionStartTimestamp
-    and executionExpirationTimestamp no new command is processed by the engine, the timer will not be triggered, and will expire.
+    Please refer to the API documentation for a detailed explanation of creating timers.
 
     :param timer_id: a user defined timer identifier, can be used to cancel or update batch
     :param execution_start_timestamp: the defined batch will not be executed before this timestamp
@@ -499,14 +494,9 @@ class UserStream(object):
 
     When a time triggered batch is received by the exchange engine, a new timer is registered.
     Based on the timer configuration, at some point in the future (between executionStartTimestamp and executionExpirationTimestamp),
-    all the carried order commands are processed, one by one, in the creation order. If executionStartTimestamp is in the past
-    and executionExpirationTimestamp is in the future, the batch will be processed immediately.
+    all the carried order commands are processed, one by one, in the creation order.
 
-    Timers are ordered by executionStartTimestamp and order of arrival. Timers with earlier executionStartTimestamp are processed first.
-    When there are more timers with the same executionStartTimestamp they are triggered by the order of arrival.
-
-    Note: timers are evaluated each time a new command is processed by the exchange engine. If between executionStartTimestamp
-    and executionExpirationTimestamp no new command is processed by the engine, the timer will not be triggered, and will expire.
+    Please refer to the API documentation for a detailed explanation of creating timers.
     """
     if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_CREATE):
       raise Exception('send_time_triggered_batch called without calling start_time_triggered_batch first')
@@ -527,11 +517,7 @@ class UserStream(object):
     - execution_expiration_timestamp
     - order_commands
 
-    Specified batch replaces the one registered during the timer creation.
-    When only new_execution_start_timestamp or new order commands are specified, the timer is modified in place.
-    This means that the update does not change the order of registered timers.
-    When new_execution_expiration_timestamp is specified, then the timer will be placed after already existing timers
-    with the same execution_expiration_timestamp.
+    Please refer to the API documentation for detailed explanation of updating timers.
 
     :param timer_id: a user defined timer identifier, can be used to cancel or update batch
     :param new_execution_start_timestamp: new value of executionStartTimestamp (optional)
@@ -581,6 +567,8 @@ class UserStream(object):
     - execution_expiration_timestamp
     - order_commands (by calling methods like place_order etc.)
 
+    Please refer to the API documentation for a detailed explanation of updating timers.
+
     :param timer_id: a user defined timer identifier, the same as used when creating the batch
     :param new_execution_start_timestamp: new value of executionStartTimestamp (optional)
     :param new_execution_expiration_timestamp: new value of executionStartTimestamp (optional)
@@ -608,10 +596,8 @@ class UserStream(object):
     - order_commands (by calling place_order, cancel_order, modify_order after calling start_update_time_triggered_batch)
 
     Specified batch replaces the one registered during the timer creation.
-    When only execution_start_timestamp or new order commands are specified, the timer is modified in place.
-    This means that the update does not change the order of registered timers.
-    When execution_expiration_timestamp is modified, then the timer will be placed after already existing timers
-    with the same execution_start_timestamp.
+
+    Please refer to the API documentation for a detailed explanation of updating timers.
 
     """
     if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_UPDATE):
