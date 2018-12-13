@@ -410,7 +410,7 @@ class UserStream(object):
     Sends batch created from calling place_order, cancel_order, modify_order after calling
     start_batch.
     """
-    if not (self._batch_mode == self.BatchMode.STANDARD):
+    if self._batch_mode != self.BatchMode.STANDARD:
       raise Exception('send_batch called without calling start_batch first')
     if len(self._batch) == 0:
       raise ValueError("Empty batch")
@@ -496,9 +496,9 @@ class UserStream(object):
     Based on the timer configuration, at some point in the future (between executionStartTimestamp and executionExpirationTimestamp),
     all the carried order commands are processed, one by one, in the creation order.
 
-    Please refer to the API documentation for a detailed explanation of creating timers.
+    Please refer to the API documentation for a detailed explanation of creating timers (https://quedex.net/doc/api/).
     """
-    if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_CREATE):
+    if self._batch_mode != self.BatchMode.TIME_TRIGGERED_CREATE:
       raise Exception('send_time_triggered_batch called without calling start_time_triggered_batch first')
     if len(self._batch) == 0:
       raise ValueError("Empty batch")
@@ -517,7 +517,7 @@ class UserStream(object):
     - execution_expiration_timestamp
     - order_commands
 
-    Please refer to the API documentation for detailed explanation of updating timers.
+    Please refer to the API documentation for detailed explanation of updating timers (https://quedex.net/doc/api/).
 
     :param timer_id: a user defined timer identifier, can be used to cancel or update batch
     :param new_execution_start_timestamp: new value of executionStartTimestamp (optional)
@@ -567,7 +567,7 @@ class UserStream(object):
     - execution_expiration_timestamp
     - order_commands (by calling methods like place_order etc.)
 
-    Please refer to the API documentation for a detailed explanation of updating timers.
+    Please refer to the API documentation for a detailed explanation of updating timers (https://quedex.net/doc/api/).
 
     :param timer_id: a user defined timer identifier, the same as used when creating the batch
     :param new_execution_start_timestamp: new value of executionStartTimestamp (optional)
@@ -597,13 +597,13 @@ class UserStream(object):
 
     Specified batch replaces the one registered during the timer creation.
 
-    Please refer to the API documentation for a detailed explanation of updating timers.
+    Please refer to the API documentation for a detailed explanation of updating timers (https://quedex.net/doc/api/).
 
     """
     if not (self._batch_mode == self.BatchMode.TIME_TRIGGERED_UPDATE):
       raise Exception('send_update_time_triggered_batch called without calling start_update_time_triggered_batch first')
 
-    if not self._batch == None and not len(self._batch) == 0:
+    if self._batch != None and len(self._batch) != 0:
       self._time_triggered_batch_command['new_command'] = self._create_batch_command_no_checks(self._batch)
     self._validate_update_command(self._time_triggered_batch_command)
     self._encrypt_send(self._time_triggered_batch_command)
