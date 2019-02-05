@@ -36,7 +36,7 @@ To use the API in your Python project include the following in your requirements
 (when installing with `pip`):
 
 ```
--e git+https://github.com/quedexnet/python-api.git@87a5d7d#egg=quedex_api
+-e git+https://github.com/quedexnet/python-api.git@f237277#egg=quedex_api
 ```
 
 ## Documentation
