@@ -31,14 +31,17 @@ class TestMarketStream(TestCase):
 
     self.assertEqual(self.listener.error, None)
     expected_quotes = {
-      u'ask': None,
-      u'ask_quantity': None,
-      u'bid': None,
-      u'bid_quantity': None,
-      u'instrument_id': u'93',
-      u'last': u'0.00035088',
+      u'ask': u'0.00001868',
+      u'ask_quantity': 1000,
+      u'bid': u'0.00001503',
+      u'bid_quantity': 1000,
+      u'instrument_id': u'5095',
+      u'last': u'0.00009091',
       u'last_quantity': 0,
       u'open_interest': 0,
+      u'tap': None,
+      u'lower_limit': None,
+      u'upper_limit': None,
       u'type': u'quotes',
       u'volume': 0
     }
