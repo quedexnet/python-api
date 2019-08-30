@@ -72,6 +72,9 @@ class MarketStreamListener(object):
         "ask_quantity": <integer>,
         "volume": <integer>,
         "open_interest": <integer>
+        "tap": <decimal price as string or None>
+        "lowerLimit": <decimal price as string or None>
+        "upperLimit: <decimal price as string or None>
       }
     """
     pass
