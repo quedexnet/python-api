@@ -74,6 +74,23 @@ class TestUserStream(TestCase):
     self.assertEqual(self.listener.open_position, open_position)
     self.assertEqual(self.listener.message, open_position)
 
+  def test_receiving_open_position_forcefully_closed(self):
+    open_position_forcefully_closed = {
+      'type': 'open_position_forcefully_closed',
+      'instrument_id': 100,
+      'side': 'long',
+      'closed_quantity': 5,
+      'remaining_quantity': 95,
+      'close_price': '0.00011000',
+      'cause': 'deleveraging'
+
+    }
+    self.user_stream.on_message(self.serialize_to_trader([open_position_forcefully_closed]))
+
+    self.assertEqual(self.listener.error, None)
+    self.assertEqual(self.listener.open_position_forcefully_closed, open_position_forcefully_closed)
+    self.assertEqual(self.listener.message, open_position_forcefully_closed)
+
   def test_receiving_order_placed(self):
     order_placed = {'type': 'order_placed', 'side': 'buy'}
     self.user_stream.on_message(self.serialize_to_trader([order_placed]))
@@ -1340,6 +1357,7 @@ class TestListener(UserStreamListener):
     self.messages = []
     self.order_modification_failed = None
     self.open_position = None
+    self.open_position_forcefully_closed = None
     self.error = None
     self.disconnect_message = None
     self.order_placed = None
@@ -1394,6 +1412,9 @@ class TestListener(UserStreamListener):
 
   def on_open_position(self, open_position):
     self.open_position = open_position
+
+  def on_open_position_forcefully_closed(self, open_position_forcefully_closed):
+    self.open_position_forcefully_closed = open_position_forcefully_closed
 
   def on_error(self, error):
     self.error = error

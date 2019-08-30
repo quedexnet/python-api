@@ -54,6 +54,21 @@ class UserStreamListener(object):
     """
     pass
 
+  def on_open_position_forcefully_closed(self, open_position_forcefully_closed):
+    """
+    :param open_position_forcefully_closed: a dict of the following format:
+      {
+        "type": "open_position_forcefully_closed",
+        "instrument_id": "<string id of the instrument>",
+        "side": "long"/"short",
+        "closed_quantity": <integer>,
+        "remaining_quantity": <integer>,
+        "close_price": "<decimal as string>",
+        "cause": "bankruptcy"/"deleveraging"
+      }
+    """
+    pass
+
   def on_order_placed(self, order_placed):
     """
     :param order_placed: a dict of the following format:
