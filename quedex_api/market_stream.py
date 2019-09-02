@@ -79,6 +79,28 @@ class MarketStreamListener(object):
     """
     pass
 
+  def on_spot_data(self, spot_data):
+    """
+    :param spot_data: a dict of the following format:
+    {
+        "type": "spot_data",
+        "update_time": <integer millis from epoch UTC>
+        "spot_data": {
+          "<string of the underlying>": {
+            "spot_index": "<decimal price as string>",
+            "spot_index_change": "<decimal price as string>",
+            "settlement_index": "<decimal price as string>",
+            "settlement_index_change": "<decimal price as string>",
+            "constituents": <list of constituents as list of strings>,
+            "spot_quotes": {
+               "<constituent as string>": "<decimal price as string>"
+            }
+          }
+        }
+      }
+    """
+    pass
+
   def on_trade(self, trade):
     """
     :param trade: a dict of the following format:
