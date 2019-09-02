@@ -48,6 +48,31 @@ class TestMarketStream(TestCase):
     self.assertEqual(self.listener.quotes, expected_quotes)
     self.assertEqual(self.listener.message, expected_quotes)
 
+  def test_receiving_spot_data(self):
+    self.market_stream.on_message(market_stream_fixtures.spot_data_str)
+
+    self.assertEqual(self.listener.error, None)
+    expected_spot_data = {
+      u'type': u'spot_data',
+      u'update_time': 1567160613702,
+      u'spot_data': {
+        u'USD': {
+          u'spot_index': u'0.00010408',
+          u'spot_index_change': u'0.00000002',
+          u'settlement_index': u'0.00010444',
+          u'settlement_index_change': u'-0.00000001',
+          u'constituents': [u'GDAX', u'Kraken', u'itBit'],
+          u'spot_quotes': {
+            u'GDAX': u'0.00010408',
+            u'Kraken': u'0.00010407',
+            u'itBit': u'0.00010408'
+          }
+        }
+      }
+    }
+    self.assertEqual(self.listener.spot_data, expected_spot_data)
+    self.assertEqual(self.listener.message, expected_spot_data)
+
   def test_receiving_instrument_data(self):
     self.market_stream.on_message(market_stream_fixtures.instrument_data_str)
 
@@ -184,6 +209,7 @@ class TestListener(MarketStreamListener):
     self.error = None
     self.disconnect_message = None
     self.ready = False
+    self.spot_data = None
 
   def on_message(self, message):
     self.message = message
@@ -211,3 +237,6 @@ class TestListener(MarketStreamListener):
 
   def on_ready(self):
     self.ready = True
+
+  def on_spot_data(self, spot_data):
+    self.spot_data = spot_data
