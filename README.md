@@ -84,7 +84,7 @@ Pull requests containing bugfixes are very welcome!
 
 ## License
 
-Copyright &copy; 2019 Quedex Ltd. API is released under [Apache License Version 2.0](LICENSE).
+Copyright &copy; 2017-2019 Quedex Ltd. API is released under [Apache License Version 2.0](LICENSE).
 
 [autobahn]: https://github.com/crossbario/autobahn-python
 [twisted]: https://www.twistedmatrix.com/
