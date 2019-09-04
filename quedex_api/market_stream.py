@@ -72,8 +72,8 @@ class MarketStreamListener(object):
         "ask_quantity": <integer>,
         "volume": <integer>,
         "open_interest": <integer>
-        "tap": <decimal price as string or None>
-        "lowerLimit": <decimal price as string or None>
+        "tap": <decimal price as string or None>,
+        "lowerLimit": <decimal price as string or None>,
         "upperLimit: <decimal price as string or None>
       }
     """
@@ -84,7 +84,7 @@ class MarketStreamListener(object):
     :param spot_data: a dict of the following format:
     {
         "type": "spot_data",
-        "update_time": <integer millis from epoch UTC>
+        "update_time": <integer millis from epoch UTC>,
         "spot_data": {
           "<string of the underlying>": {
             "spot_index": "<decimal price as string>",
