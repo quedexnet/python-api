@@ -7,7 +7,7 @@ setup(
   packages=['quedex_api'],
   install_requires=[
     'autobahn==17.6.2',
-    'twisted==17.5.0',
+    'twisted==22.2.0',
     'cryptography==2.0.3',
     'pyOpenSSL==17.1.0',
     'pgpy==0.4.2',
