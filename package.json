@@ -23,7 +23,7 @@
   "homepage": "https://github.com/quedexnet/python-api#readme",
   "devDependencies": {
     "del": "^3.0.0",
-    "gulp": "^3.9.1",
+    "gulp": "^4.0.2",
     "gulp-rename2": "^0.1.5",
     "gulp-util": "^3.0.8",
     "gulp-writ": "^1.1.0"
